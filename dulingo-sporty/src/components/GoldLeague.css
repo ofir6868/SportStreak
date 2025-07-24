@@ -1,0 +1,58 @@
+.GoldLeague {
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 24px #e6f0fa44;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 2rem;
+  min-width: 240px;
+  max-width: 340px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.GoldLeagueHeader {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.7rem;
+}
+.GoldTrophy {
+  font-size: 2rem;
+  margin-right: 0.7rem;
+  filter: drop-shadow(0 0 8px #ffd70099);
+}
+.GoldLeagueTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+  flex: 1;
+}
+.GoldLeagueCTA {
+  background: #1CB0F6;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 1.2rem;
+  padding: 0.4rem 1.1rem;
+  box-shadow: 0 2px 8px #1cb0f644;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+}
+.GoldLeagueCTA:hover {
+  background: #009ee0;
+  transform: scale(1.05);
+}
+.GoldLeagueMsg {
+  color: #888;
+  font-size: 0.98rem;
+  margin-top: 0.2rem;
+}
+@media (max-width: 800px) {
+  .GoldLeague {
+    min-width: 0;
+    max-width: 98vw;
+    padding: 1rem 0.7rem;
+  }
+} 
