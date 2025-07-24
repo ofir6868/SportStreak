@@ -35,6 +35,7 @@
     },
     "updates": {
       "url": "https://u.expo.dev/2d47bd25-74f0-4243-b584-6e9c714d5d8c"
-    }
+    },
+    "jsEngine": "jsc"
   }
 }

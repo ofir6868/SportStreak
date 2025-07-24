@@ -1,27 +1,30 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 const navItems = [
-  { label: 'Home', icon: '🏠', active: true },
-  { label: 'Practice', icon: '🛡️' },
-  { label: 'Leaderboard', icon: '🏆' },
-  { label: 'Shop', icon: '🛍️' },
-  { label: 'Profile', icon: '👤' },
+  { label: 'Home', icon: <FontAwesome5 name="home" size={22} />, active: true },
+  { label: 'Practice', icon: <MaterialCommunityIcons name="dumbbell" size={22} />, active: false },
+  { label: 'Leaderboard', icon: <FontAwesome5 name="trophy" size={22} />, active: false },
+  { label: 'Shop', icon: <Feather name="shopping-bag" size={22} />, active: false },
+  { label: 'Profile', icon: <FontAwesome5 name="user" size={22} />, active: false },
 ];
 
 const BottomNavBar = () => {
   return (
     <View style={styles.container}>
-      {navItems.map((item, idx) => (
+      {navItems.map((item) => (
         <TouchableOpacity
           key={item.label}
           style={styles.tab}
           activeOpacity={0.7}
         >
           <View style={[styles.iconCircle, item.active && styles.activeIconCircle]}>
-            <Text style={[styles.icon, item.active && styles.activeIcon]}>{item.icon}</Text>
+            {React.cloneElement(item.icon, {
+              color: item.active ? '#FF4B4B' : '#B0B0B0',
+              style: [styles.icon, item.active && styles.activeIcon],
+            })}
           </View>
-          {/* <Text style={[styles.label, item.active && styles.activeLabel]}>{item.label}</Text> */}
         </TouchableOpacity>
       ))}
     </View>
@@ -39,6 +42,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#E6F0FA',
+    marginBottom: 40
   },
   tab: {
     flex: 1,
@@ -61,15 +65,6 @@ const styles = StyleSheet.create({
     color: '#B0B0B0',
   },
   activeIcon: {
-    color: '#FF4B4B',
-    fontWeight: 'bold',
-  },
-  label: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  activeLabel: {
     color: '#FF4B4B',
     fontWeight: 'bold',
   },

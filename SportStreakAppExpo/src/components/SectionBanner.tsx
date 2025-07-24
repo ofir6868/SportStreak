@@ -1,14 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 
 const SectionBanner = () => {
+  const handleMenuPress = () => {
+    Alert.alert('Menu', 'Menu button pressed!');
+  };
   return (
     <View style={styles.banner}>
       <View>
-        <Text style={styles.section}>SECTION 1, UNIT 1</Text>
-        <Text style={styles.title}>Form basic sentences</Text>
+        <Text style={styles.section}>YOUR FITNESS JOURNEY</Text>
+        <Text style={styles.title}>Keep your streak alive!</Text>
       </View>
-      <Text style={styles.listIcon}>≡</Text>
+      <TouchableOpacity onPress={handleMenuPress} activeOpacity={0.7}>
+        <Text style={styles.listIcon}>≡</Text>
+      </TouchableOpacity>
     </View>
   );
 };
