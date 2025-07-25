@@ -1,14 +1,17 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal } from 'react-native';
 import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useProgress } from './ProgressContext';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useProgress, } from './ProgressContext';
+import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
 
 const TopStatusBar = () => {
-  const { streak, streakUpdatedToday } = useProgress();
+  const { streak, streakUpdatedToday, presetKey, setPresetKey } = useProgress();
   const navigation = useNavigation<any>();
   const [diamondModalVisible, setDiamondModalVisible] = React.useState(false);
   const [heartModalVisible, setHeartModalVisible] = React.useState(false);
+  const [menuVisible, setMenuVisible] = React.useState(false);
+  const presetKeys: ExercisePresetKey[] = ['strength', 'running', 'yoga'];
 
   const handleStreakPress = () => {
     navigation.navigate('StreakCelebration', { streak });
@@ -22,6 +25,7 @@ const TopStatusBar = () => {
 
   return (
     <View style={styles.container}>
+      {/* Streak, diamonds, hearts */}
       <TouchableOpacity style={styles.item} onPress={handleStreakPress} activeOpacity={0.7}>
         <View style={[styles.fireIconWrapper, streakUpdatedToday && styles.glow]}>
           <FontAwesome5 name="fire" size={22} color={streak > 0 ? (streakUpdatedToday ? '#FFA500' : '#FF9900') : '#888'} style={styles.icon} />
@@ -36,7 +40,33 @@ const TopStatusBar = () => {
         <FontAwesome5 name="heart" size={22} color="#FF4B4B" style={styles.icon} />
         <Text style={styles.value}>5</Text>
       </TouchableOpacity>
-
+      {/* Preset selector icon at top right */}
+      <View style={styles.presetIconContainer}>
+        <TouchableOpacity onPress={() => setMenuVisible(!menuVisible)} style={styles.presetIconButton}>
+          {presetKey === 'strength' ? (
+            <MaterialCommunityIcons name="dumbbell" size={28} color="#58CC02" />
+          ) : presetKey === 'running' ? (
+            <MaterialCommunityIcons name="run" size={28} color="#58CC02" />
+          ) : (
+            <MaterialCommunityIcons name="yoga" size={28} color="#58CC02" />
+          )}
+        </TouchableOpacity>
+        {menuVisible && (
+          <View style={styles.presetDropdownMenu}>
+            {presetKeys.map((key) => (
+              <TouchableOpacity key={key} style={styles.presetDropdownItem} onPress={() => { setPresetKey(key); setMenuVisible(false); }}>
+                {key === 'strength' ? (
+                  <MaterialCommunityIcons name="dumbbell" size={22} color={presetKey === key ? '#58CC02' : '#888'} />
+                ) : key === 'running' ? (
+                  <MaterialCommunityIcons name="run" size={22} color={presetKey === key ? '#58CC02' : '#888'} />
+                ) : (
+                  <MaterialCommunityIcons name="yoga" size={22} color={presetKey === key ? '#58CC02' : '#888'} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
       {/* Diamonds Modal */}
       <Modal
         visible={diamondModalVisible}
@@ -85,7 +115,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 15,
-    marginTop: 20
+    marginTop: 20,
+    position: 'relative',
   },
   item: {
     flexDirection: 'row',
@@ -151,6 +182,40 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  presetIconContainer: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    zIndex: 100,
+  },
+  presetIconButton: {
+    padding: 6,
+    borderRadius: 16,
+    backgroundColor: '#E6F0FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  presetDropdownMenu: {
+    position: 'absolute',
+    top: 38,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 4,
+    minWidth: 44,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 101,
+  },
+  presetDropdownItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
 });
 
