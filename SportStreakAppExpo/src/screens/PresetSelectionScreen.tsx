@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
 
-const PresetSelectionScreen = ({ navigation }: any) => {
+const PresetSelectionScreen = ({ navigation }: { navigation: any }) => {
   const [selected, setSelected] = useState<ExercisePresetKey | null>(null);
 
   const handleContinue = async () => {

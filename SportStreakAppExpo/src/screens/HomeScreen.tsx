@@ -1,16 +1,32 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Alert } from 'react-native';
 import TopStatusBar from '../components/TopStatusBar';
-import SectionBanner from '../components/SectionBanner';
 import LearningPath from '../components/LearningPath';
 import BottomNavBar from '../components/BottomNavBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
-const HomeScreen = () => {
+
+const HomeScreen = ({ navigation }: any) => {
+  const handleRestart = async () => {
+    await AsyncStorage.clear();
+    navigation.replace('Welcome');
+    setTimeout(() => {
+      // This will reload the JS bundle (works in dev)
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.reload();
+      }
+    }, 500);
+  };
   return (
     <View style={styles.container}>
       <View style={styles.stickyHeader}>
         <TopStatusBar />
-        <SectionBanner />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', padding: 8, position:'absolute', right:0, top: 62   }}>
+          <TouchableOpacity style={styles.restartButton} onPress={handleRestart}>
+            <Text style={styles.restartText}>Restart</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <LearningPath />
@@ -42,6 +58,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: '#fff',
     zIndex: 10,
+  },
+  restartButton: {
+    backgroundColor: '#FF4B4B',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    marginLeft: 8,
+  },
+  restartText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

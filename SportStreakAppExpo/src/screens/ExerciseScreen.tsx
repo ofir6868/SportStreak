@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, Animated, Easing, Image } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Camera, CameraView } from 'expo-camera';
+import { ExerciseIcon } from '../components/LearningPath';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useProgress } from '../components/ProgressContext';
 
@@ -14,10 +15,8 @@ const ExerciseScreen = () => {
   const { exercise, idx } = route.params;
   const [step, setStep] = useState<Step>('explanation');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const cameraRef = useRef(null);
   const { markExerciseComplete, streak, streakUpdatedToday } = useProgress();
-  const flameAnim = useRef(new Animated.Value(0)).current;
   const [recordingState, setRecordingState] = useState<'idle' | 'countdown' | 'recording'>('idle');
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState<number | null>(null);
@@ -112,7 +111,7 @@ const ExerciseScreen = () => {
       {step === 'explanation' && (
         <View style={styles.centered}>
           <Text style={styles.title}>{exercise.title}</Text>
-          <View style={styles.iconBox}>{exercise.icon}</View>
+          <View style={styles.iconBox}><ExerciseIcon name={exercise.icon} size={56} /></View>
           <Text style={styles.desc}>Instructions: Do as many {exercise.title.toLowerCase()} as you can in {duration} seconds. {exercise.subtitle}</Text>
           <TouchableOpacity style={styles.button} onPress={goNext}>
             <Text style={styles.buttonText}>Next</Text>

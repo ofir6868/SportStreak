@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SignupScreen = ({ navigation }: any) => {
+const SignupScreen = ({ navigation }) => {
   const [age, setAge] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProgress } from './ProgressContext';
-import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
+import { EXERCISE_PRESETS, ExercisePresetKey, PathCircle } from '../config/exercisePresets';
 
 const { width } = Dimensions.get('window');
 const PATH_WIDTH = width * 0.9;
@@ -19,30 +19,10 @@ const PATH_X_CENTER = PATH_WIDTH / 2;
 const CURVE_X_OFFSET = 60;
 const VERTICAL_GAP = 140;
 
-// Helper to map icon string to icon component
-const getIconComponent = (icon: string, color: string = '#1CB0F6') => {
+// Dedicated ExerciseIcon component
+export const ExerciseIcon = ({ name, color = '#1CB0F6', size = 28 }: { name: string, color?: string, size?: number }) => {
   // MaterialCommunityIcons covers most fitness icons
-  // Add more mappings if needed
-  switch (icon) {
-    case 'run':
-    case 'run-fast':
-    case 'walk':
-    case 'arm-flex':
-    case 'human-handsup':
-    case 'human':
-    case 'weight-lifter':
-    case 'timer':
-    case 'road-variant':
-    case 'terrain':
-    case 'tree':
-    case 'dog':
-    case 'bridge':
-    case 'human-child':
-    case 'yoga':
-      return <MaterialCommunityIcons name={icon} size={28} color={color} />;
-    default:
-      return <MaterialCommunityIcons name="help-circle" size={28} color={color} />;
-  }
+  return <MaterialCommunityIcons name={name as typeof MaterialCommunityIcons.glyphMap} size={28} color={color} />;
 };
 
 const getBubblePosition = (i: number, numBubbles: number) => {
@@ -93,7 +73,7 @@ type Status = 'start' | 'review' | 'go' | 'locked';
 
 type RootStackParamList = {
   Home: undefined;
-  Exercise: { exercise: any; idx: number };
+  Exercise: { exercise: PathCircle; idx: number };
 };
 
 const initialProgress = [false, false, false, false, false, false];
@@ -113,7 +93,7 @@ const LearningPath = () => {
     return 'locked';
   };
 
-  const handlePress = useCallback((status: Status, bubble: any, idx: number) => {
+  const handlePress = useCallback((status: Status, bubble: PathCircle, idx: number) => {
     if (status === 'locked') return;
     navigation.navigate('Exercise', {
       exercise: bubble,
@@ -173,7 +153,7 @@ const LearningPath = () => {
                 activeOpacity={!isLocked ? 0.7 : 1}
               >
                 <View style={[styles.iconCircle, isLocked && { backgroundColor: '#E0E0E0' }]}> 
-                  {getIconComponent(bubble.icon, isLocked ? '#B0B0B0' : statusColors[status])}
+                  <ExerciseIcon name={bubble.icon} size={28} color={isLocked ? '#B0B0B0' : statusColors[status]} />
                 </View>
                 <Text
                   style={[
