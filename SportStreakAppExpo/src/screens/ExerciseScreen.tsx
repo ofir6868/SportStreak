@@ -113,7 +113,7 @@ const ExerciseScreen = () => {
         <View style={styles.centered}>
           <Text style={styles.title}>{exercise.title}</Text>
           <View style={styles.iconBox}>{exercise.icon}</View>
-          <Text style={styles.desc}>Instructions: Do as many {exercise.name.toLowerCase()}s as you can in {duration} seconds. {exercise.subtitle}</Text>
+          <Text style={styles.desc}>Instructions: Do as many {exercise.title.toLowerCase()} as you can in {duration} seconds. {exercise.subtitle}</Text>
           <TouchableOpacity style={styles.button} onPress={goNext}>
             <Text style={styles.buttonText}>Next</Text>
           </TouchableOpacity>

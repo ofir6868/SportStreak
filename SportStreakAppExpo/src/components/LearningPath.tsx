@@ -19,6 +19,31 @@ const PATH_X_CENTER = PATH_WIDTH / 2;
 const CURVE_X_OFFSET = 60;
 const VERTICAL_GAP = 140;
 
+// Helper to map icon string to icon component
+const getIconComponent = (icon: string, color: string = '#1CB0F6') => {
+  // MaterialCommunityIcons covers most fitness icons
+  // Add more mappings if needed
+  switch (icon) {
+    case 'run':
+    case 'run-fast':
+    case 'walk':
+    case 'arm-flex':
+    case 'human-handsup':
+    case 'human':
+    case 'weight-lifter':
+    case 'timer':
+    case 'road-variant':
+    case 'terrain':
+    case 'tree':
+    case 'dog':
+    case 'bridge':
+    case 'human-child':
+    case 'yoga':
+      return <MaterialCommunityIcons name={icon} size={28} color={color} />;
+    default:
+      return <MaterialCommunityIcons name="help-circle" size={28} color={color} />;
+  }
+};
 
 const getBubblePosition = (i: number, numBubbles: number) => {
   // Spread bubbles vertically with more space
@@ -74,42 +99,11 @@ type RootStackParamList = {
 const initialProgress = [false, false, false, false, false, false];
 const initialCompleted = [false, false, false, false, false, false];
 
-const fetchExerciseDetails = async (id: number) => {
-  try {
-    const res = await fetch(`https://wger.de/api/v2/exerciseinfo/${id}/`);
-    if (!res.ok) throw new Error('Failed to fetch exercise info');
-    const data = await res.json();
-    // Find English translation
-    const translation = data.translations.find((t: any) => t.language === 2);
-    const name = translation?.name?.trim() || 'No name';
-    // Get image
-    const image = data.images && data.images.length > 0 ? data.images[0].image : null;
-    return { id, name, image };
-  } catch (e) {
-    console.log('Fetch error for id', id, e);
-    return { id, name: 'No name', image: null };
-  }
-};
-
 const LearningPath = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [fontsLoaded] = useFonts(fontMap);
   const { progress, completed, presetKey } = useProgress();
-  const exerciseIds = EXERCISE_PRESETS[presetKey].exerciseIds;
-  const [exerciseDetails, setExerciseDetails] = useState<{ id: number; name: string; image: string | null }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    Promise.all(exerciseIds.map(fetchExerciseDetails)).then((results) => {
-      if (isMounted) {
-        setExerciseDetails(results);
-        setLoading(false);
-      }
-    });
-    return () => { isMounted = false; };
-  }, [exerciseIds]);
+  const presetCircles = EXERCISE_PRESETS[presetKey].circles;
 
   // Dynamically assign status based on progress/completed
   const getBubbleStatus = (i: number): Status => {
@@ -127,7 +121,7 @@ const LearningPath = () => {
     });
   }, [navigation]);
 
-  const numBubbles = exerciseDetails.length;
+  const numBubbles = presetCircles.length;
   const pathHeight = VERTICAL_GAP * (numBubbles - 1) + 200;
   // Calculate last bubble's y position
   const lastBubbleY = VERTICAL_GAP * (numBubbles - 1) + 80;
@@ -135,10 +129,6 @@ const LearningPath = () => {
 
   // PATCH: Always render, show warning if fonts not loaded
   // if (!fontsLoaded) return null;
-
-  if (loading) {
-    return <View style={{ padding: 40, alignItems: 'center' }}><Text>Loading exercises...</Text></View>;
-  }
 
   return (
     <View style={styles.outerContainer}>
@@ -156,13 +146,13 @@ const LearningPath = () => {
               strokeLinecap="round"
             />
           </Svg>
-          {exerciseDetails.map((exercise, i) => {
+          {presetCircles.map((bubble, i) => {
             const { x, y } = getBubblePosition(i, numBubbles);
             const status = getBubbleStatus(i);
             const isLocked = status === 'locked';
             return (
               <TouchableOpacity
-                key={exercise.id}
+                key={bubble.id}
                 style={[
                   styles.bubble,
                   {
@@ -178,59 +168,39 @@ const LearningPath = () => {
                     opacity: 1,
                   },
                 ]}
-                onPress={() => handlePress(status, exercise, i)}
+                onPress={() => handlePress(status, bubble, i)}
                 disabled={isLocked}
                 activeOpacity={!isLocked ? 0.7 : 1}
               >
-                {/* Icon at top center */}
-                <View style={{ position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center', zIndex: 2 }}>
-                  <View style={[styles.iconCircle, isLocked && { backgroundColor: '#E0E0E0' }]}> 
-                    {exercise.image ? (
-                      <Image source={{ uri: exercise.image }} style={{ width: 36, height: 36, borderRadius: 18, resizeMode: 'contain' }} />
-                    ) : (
-                      presetKey === 'strength' ? (
-                        <MaterialCommunityIcons name="dumbbell" size={36} color={isLocked ? '#B0B0B0' : statusColors[status]} />
-                      ) : presetKey === 'running' ? (
-                        <MaterialCommunityIcons name="run" size={36} color={isLocked ? '#B0B0B0' : statusColors[status]} />
-                      ) : (
-                        <MaterialCommunityIcons name="yoga" size={36} color={isLocked ? '#B0B0B0' : statusColors[status]} />
-                      )
-                    )}
-                  </View>
+                <View style={[styles.iconCircle, isLocked && { backgroundColor: '#E0E0E0' }]}> 
+                  {getIconComponent(bubble.icon, isLocked ? '#B0B0B0' : statusColors[status])}
                 </View>
-                {/* Text centered in the bubble */}
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
-                  <Text
-                    style={[
-                      styles.title,
-                      {
-                        color: isLocked ? '#B0B0B0' : statusColors[status],
-                        fontFamily: fontsLoaded ? 'Nunito' : undefined,
-                        maxWidth: 60,
-                        textAlign: 'center',
-                        fontSize: 13,
-                        lineHeight: 15,
-                        overflow: 'hidden',
-                        flexWrap: 'nowrap',
-                      },
-                    ]}
-                    numberOfLines={2}
-                    ellipsizeMode="tail"
-                  >
-                    {exercise.name}
-                  </Text>
-                </View>
-                {/* Status button at bottom center */}
+                <Text
+                  style={[
+                    styles.title,
+                    {
+                      color: isLocked ? '#B0B0B0' : statusColors[status],
+                      fontFamily: fontsLoaded ? 'Nunito' : undefined,
+                    },
+                  ]}
+                >
+                  {bubble.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.subtitle,
+                    {
+                      fontFamily: fontsLoaded ? 'Nunito-Regular' : undefined,
+                      color: isLocked ? '#B0B0B0' : '#888',
+                    },
+                  ]}
+                >
+                  {bubble.subtitle}
+                </Text>
                 <View
                   style={[
                     styles.statusBox,
                     {
-                      position: 'absolute',
-                      bottom: -8,
-                      left: 0,
-                      right: 0,
-                      marginLeft: 'auto',
-                      marginRight: 'auto',
                       backgroundColor: isLocked ? '#B0B0B0' : statusColors[status],
                     },
                   ]}
@@ -249,7 +219,7 @@ const LearningPath = () => {
                 </View>
                 {completed[i] && (
                   <Text
-                    style={{ position: 'absolute', top: 7, right: 11, fontSize: 16, color: '#58CC02', zIndex: 3 }}
+                    style={{ position: 'absolute', top: 4, right: 4, fontSize: 16, color: '#58CC02' }}
                   >
                     ✓
                   </Text>
@@ -317,14 +287,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    position: 'absolute',
-    top: -28,
-    left: 17,
-    right: 0,
-    bottom: 0,
     backgroundColor: '#F4F8FB',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 1,
   },
   title: {
     fontSize: 15,

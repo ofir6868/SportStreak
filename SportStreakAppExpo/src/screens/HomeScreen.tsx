@@ -4,7 +4,6 @@ import TopStatusBar from '../components/TopStatusBar';
 import SectionBanner from '../components/SectionBanner';
 import LearningPath from '../components/LearningPath';
 import BottomNavBar from '../components/BottomNavBar';
-import FloatingPresetSelector from '../components/FloatingPresetSelector';
 
 const HomeScreen = () => {
   return (
@@ -16,7 +15,6 @@ const HomeScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <LearningPath />
       </ScrollView>
-      <FloatingPresetSelector />
       <View style={styles.stickyFooter}>
         <BottomNavBar />
       </View>
