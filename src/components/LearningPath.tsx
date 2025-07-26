@@ -71,17 +71,52 @@ const getBubblePosition = (i: number, numBubbles: number) => {
 };
 
 const getPathD = (numBubbles: number) => {
-  let d = '';
-  for (let i = 0; i < numBubbles - 1; i++) {
-    const { x: x1, y: y1 } = getBubblePosition(i, numBubbles);
-    const { x: x2, y: y2 } = getBubblePosition(i + 1, numBubbles);
-    const c1x = x1;
-    const c1y = y1 + (y2 - y1) / 2;
-    const c2x = x2;
-    const c2y = y2 - (y2 - y1) / 2;
-    d += i === 0 ? `M${x1},${y1} ` : '';
-    d += `C${c1x},${c1y} ${c2x},${c2y} ${x2},${y2} `;
+  if (numBubbles < 2) return '';
+  
+  // Get all bubble positions
+  const positions = [];
+  for (let i = 0; i < numBubbles; i++) {
+    positions.push(getBubblePosition(i, numBubbles));
   }
+  
+  // Create a mathematical sin-like curve that passes through all circles
+  // This creates a truly continuous smooth path with proper sin-like curvature
+  let d = `M${positions[0].x},${positions[0].y}`;
+  
+  // For each segment between circles, create a smooth curve
+  for (let i = 0; i < numBubbles - 1; i++) {
+    const current = positions[i];
+    const next = positions[i + 1];
+    
+    // Calculate distances
+    const verticalDistance = next.y - current.y;
+    const horizontalDistance = Math.abs(next.x - current.x);
+    
+    // Create a mathematical sin-like curve
+    // The curve should flow smoothly from one circle to the next
+    // with appropriate curvature that mimics a sin function
+    
+    // Determine the direction for this segment
+    const isEven = i % 2 === 0;
+    const curveDirection = isEven ? 1 : -1;
+    
+    // Calculate control points for a smooth sin-like curve
+    // Use mathematical approach to create proper sin-like curves
+    
+    // First control point: starts from current circle and curves outward
+    // Use mathematical proportions for sin-like curves with proper amplitude
+    // The 0.8 factor creates a pronounced sin-like curve
+    const control1X = current.x + (curveDirection * horizontalDistance * 0.8);
+    const control1Y = current.y + verticalDistance * 0.7;
+    
+    // Second control point: curves back toward the next circle
+    // Mirror the first control point for smooth transition
+    const control2X = next.x - (curveDirection * horizontalDistance * 0.8);
+    const control2Y = next.y - verticalDistance * 0.7;
+    
+    d += ` C${control1X},${control1Y} ${control2X},${control2Y} ${next.x},${next.y}`;
+  }
+  
   return d;
 };
 
@@ -160,7 +195,7 @@ const LearningPath = () => {
   // Dark mode color scheme with excellent contrast
   const colors = {
     // Path colors
-    pathStroke: isDarkMode ? '#58CC02' : '#58CC02', // Keep green for path
+    pathStroke: '#FFA800', // Keep green for path
     pathStrokeWidth: 10,
     
     // Bubble colors

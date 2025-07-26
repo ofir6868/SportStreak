@@ -31,7 +31,7 @@ const ShopScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.header}>
           <AppText style={[styles.headerTitle, { color: colors.primary }]}>Shop</AppText>
@@ -175,6 +175,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   comingSoonContainer: {
+    margin: 20,
     alignItems: 'center',
     padding: 40,
     borderRadius: 20,

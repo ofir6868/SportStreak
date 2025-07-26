@@ -33,8 +33,8 @@ const TutorialScreen = ({ navigation }) => {
       <AppText style={styles.comingSoonTitle}>Coming soon</AppText>
       <View style={styles.comingSoonBox}>
         <View style={styles.featureRow}>
-          <MaterialCommunityIcons name="camera-outline" size={24} color="#1CB0F6" style={styles.icon} />
-          <AppText style={styles.featureText}>Camera-based tracking
+          <MaterialCommunityIcons name="chart-line" size={24} color="#1CB0F6" style={styles.icon} />
+          <AppText style={styles.featureText}>Advanced analytics
             <View style={styles.badge}><AppText style={styles.badgeText}>Coming soon</AppText></View>
           </AppText>
         </View>

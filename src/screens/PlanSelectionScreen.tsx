@@ -75,7 +75,7 @@ const PlanSelectionScreen = ({ navigation }: { navigation: any }) => {
         {/* Free Plan */}
         <TouchableOpacity
           style={[styles.planCard, selectedPlan === 'free' && styles.selectedPlan]}
-          onPress={() => setSelectedPlan('free')}
+          onPress={() => { setSelectedPlan('free');  handleContinue() } }
           activeOpacity={0.8}
         >
           <View style={styles.planHeader}>
@@ -152,6 +152,7 @@ const PlanSelectionScreen = ({ navigation }: { navigation: any }) => {
 
 const styles = StyleSheet.create({
   container: {
+    marginVertical: 30,
     flex: 1,
     backgroundColor: '#F8F9FB',
   },

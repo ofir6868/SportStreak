@@ -178,13 +178,14 @@ const TopStatusBar = () => {
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: '#FF8F00',
-    paddingTop: 30,
-    paddingBottom: 4,
+    paddingTop: 35,
+    paddingBottom: 12,
     paddingHorizontal: 0,
     shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   innerRow: {
     flexDirection: 'row',
