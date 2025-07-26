@@ -45,7 +45,7 @@ export const EXERCISE_PRESETS: Record<ExercisePresetKey, ExercisePreset> = {
     label: 'Yoga',
     description: 'Enhance flexibility and balance with yoga flows.',
     circles: [
-      { id: 0, type: 'yoga', title: 'Sun Salutation', subtitle: 'Warm up', status: 'start', icon: 'yoga', duration: 30 },
+      { id: 0, type: 'yoga', title: 'Sun Salute', subtitle: 'Warm up', status: 'start', icon: 'yoga', duration: 30 },
       { id: 1, type: 'yoga', title: 'Tree Pose', subtitle: 'Balance', status: 'go', icon: 'tree', duration: 30 },
       { id: 2, type: 'yoga', title: 'Warrior I', subtitle: 'Strength', status: 'locked', icon: 'human', duration: 30 },
       { id: 3, type: 'yoga', title: 'Downward Dog', subtitle: 'Stretch', status: 'locked', icon: 'dog', duration: 30 },

@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
+import AppText from '../components/AppText';
+import { useProgress } from '../components/ProgressContext';
 
 const PresetSelectionScreen = ({ navigation }: { navigation: any }) => {
   const [selected, setSelected] = useState<ExercisePresetKey | null>(null);
+  const { setPresetKey } = useProgress();
 
   const handleContinue = async () => {
     if (!selected) return;
     await AsyncStorage.setItem('selectedPreset', selected);
-    navigation.replace('Home');
+    setPresetKey(selected);
+    navigation.replace('UserInfo');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Choose your exercise type</Text>
+      <AppText style={styles.title}>Choose your exercise type</AppText>
       <FlatList
         data={Object.entries(EXERCISE_PRESETS)}
         keyExtractor={([key]) => key}
@@ -23,8 +27,8 @@ const PresetSelectionScreen = ({ navigation }: { navigation: any }) => {
             style={[styles.preset, selected === key && styles.selectedPreset]}
             onPress={() => setSelected(key as ExercisePresetKey)}
           >
-            <Text style={styles.presetTitle}>{preset.label}</Text>
-            <Text style={styles.presetDesc}>{preset.description}</Text>
+            <AppText style={styles.presetTitle}>{preset.label}</AppText>
+            <AppText style={styles.presetDesc}>{preset.description}</AppText>
           </TouchableOpacity>
         )}
       />
@@ -33,7 +37,7 @@ const PresetSelectionScreen = ({ navigation }: { navigation: any }) => {
         onPress={handleContinue}
         disabled={!selected}
       >
-        <Text style={styles.buttonText}>CONTINUE</Text>
+        <AppText style={styles.buttonText}>CONTINUE</AppText>
       </TouchableOpacity>
     </View>
   );
@@ -50,7 +54,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -68,7 +72,7 @@ const styles = StyleSheet.create({
   },
   presetTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     marginBottom: 4,
   },
   presetDesc: {
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 16,
   },
 });

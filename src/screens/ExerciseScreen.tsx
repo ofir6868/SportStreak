@@ -1,10 +1,11 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, Animated, Easing, Image } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Alert } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
-import { ExerciseIcon } from '../components/LearningPath';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { ExerciseIcon } from '../components/LearningPath';
 import { useProgress } from '../components/ProgressContext';
+import AppText from '../components/AppText';
 
 const steps = ['explanation', 'privacy', 'camera'] as const;
 type Step = typeof steps[number];
@@ -12,17 +13,29 @@ type Step = typeof steps[number];
 const ExerciseScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { exercise, idx } = route.params;
+  const { exercise, idx, workoutId, exerciseIndex, setNumber, totalSets } = route.params;
   const [step, setStep] = useState<Step>('explanation');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const cameraRef = useRef(null);
-  const { markExerciseComplete, streak, streakUpdatedToday } = useProgress();
+  const { markExerciseComplete, streak, streakUpdatedToday, updateQuestProgressWithParams, isDarkMode, completeWorkoutSet } = useProgress();
   const [recordingState, setRecordingState] = useState<'idle' | 'countdown' | 'recording'>('idle');
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState<number | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [blinkAnim] = useState(new Animated.Value(1));
   const duration = exercise.duration || 30;
+
+  // Dark mode colors
+  const colors = {
+    background: isDarkMode ? '#1a1a1a' : '#fff',
+    text: isDarkMode ? '#ffffff' : '#444',
+    textSecondary: isDarkMode ? '#cccccc' : '#666',
+    primary: '#1CB0F6',
+    accent: '#FFA800',
+    danger: '#FF4B4B',
+    success: '#58CC02',
+    border: isDarkMode ? '#404040' : '#e0e0e0',
+  };
 
   // Request camera permission on camera step
   React.useEffect(() => {
@@ -96,80 +109,104 @@ const ExerciseScreen = () => {
   };
 
   const handleDone = async () => {
-    const { streaked, newStreak } = await markExerciseComplete(idx);
-    if (streaked) {
-      navigation.navigate('StreakCelebration', { streak: newStreak });
+    const actualDuration = duration - (timer || 0);
+    
+    // If this is part of a workout, use the context to complete the set
+    if (workoutId) {
+      completeWorkoutSet(exerciseIndex, actualDuration);
+      navigation.goBack();
       return;
     }
-    Alert.alert('Great job!', `You completed: ${exercise.title}`);
-    navigation.goBack();
+    
+    // Otherwise, handle as standalone exercise
+    const { streaked, newStreak } = await markExerciseComplete(idx, {
+      totalDuration: Math.floor(actualDuration / 60), // Convert to minutes
+      perfectAccuracy: 1 // Assuming 100% for now
+    });
+    
+    const durationString = `${Math.floor(actualDuration / 60)}:${(actualDuration % 60).toString().padStart(2, '0')}`;
+    navigation.navigate('ExerciseCompletion', { 
+      exercise, 
+      xp: 5, 
+      duration: durationString, 
+      accuracy: '100%',
+      shouldShowStreak: streaked,
+      streak: newStreak
+    });
   };
 
   // UI rendering
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {step === 'explanation' && (
         <View style={styles.centered}>
-          <Text style={styles.title}>{exercise.title}</Text>
-          <View style={styles.iconBox}><ExerciseIcon name={exercise.icon} size={56} /></View>
-          <Text style={styles.desc}>Instructions: Do as many {exercise.title.toLowerCase()} as you can in {duration} seconds. {exercise.subtitle}</Text>
-          <TouchableOpacity style={styles.button} onPress={goNext}>
-            <Text style={styles.buttonText}>Next</Text>
+          <AppText style={[styles.title, { color: colors.primary }]}>{exercise.title}</AppText>
+          <View style={styles.iconBox}><ExerciseIcon name={exercise.icon} size={56} color={colors.primary} /></View>
+          {workoutId && setNumber && (
+            <AppText style={[styles.setInfo, { color: colors.accent }]}>
+              Set {setNumber} of {totalSets}
+            </AppText>
+          )}
+          <AppText style={[styles.desc, { color: colors.text }]}>
+            {exercise.instructions || `Do as many ${exercise.title.toLowerCase()} as you can in ${duration} seconds.`}
+          </AppText>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={goNext}>
+            <AppText style={styles.buttonText}>Next</AppText>
           </TouchableOpacity>
         </View>
       )}
       {step === 'privacy' && (
         <View style={styles.centered}>
-          <FontAwesome5 name="user-shield" size={48} color="#1CB0F6" style={{ marginBottom: 24 }} />
-          <Text style={styles.title}>Your privacy is protected</Text>
-          <Text style={styles.desc}>Your exercise video is only stored on your device and never uploaded.</Text>
-          <TouchableOpacity style={styles.button} onPress={goNext}>
-            <Text style={styles.buttonText}>Continue</Text>
+          <FontAwesome5 name="user-shield" size={48} color={colors.primary} style={{ marginBottom: 24 }} />
+          <AppText style={[styles.title, { color: colors.primary }]}>Your privacy is protected</AppText>
+          <AppText style={[styles.desc, { color: colors.text }]}>Your exercise video is only stored on your device and never uploaded.</AppText>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={goNext}>
+            <AppText style={styles.buttonText}>Continue</AppText>
           </TouchableOpacity>
           <TouchableOpacity style={styles.link} onPress={goBack}>
-            <Text style={styles.linkText}>Back</Text>
+            <AppText style={[styles.linkText, { color: colors.primary }]}>Back</AppText>
           </TouchableOpacity>
         </View>
       )}
       {step === 'camera' && (
         <View style={styles.cameraContainer}>
           {hasPermission === null ? (
-            <Text style={styles.desc}>Requesting camera permission...</Text>
+            <AppText style={[styles.desc, { color: colors.text }]}>Requesting camera permission...</AppText>
           ) : hasPermission === false ? (
-            <Text style={styles.desc}>No access to camera</Text>
+            <AppText style={[styles.desc, { color: colors.text }]}>No access to camera</AppText>
           ) : (
             <CameraView style={styles.camera} ref={cameraRef} facing={"front"}>
               <View style={styles.cameraOverlay}>
                 {/* Recording UI */}
                 {recordingState === 'idle' && (
                   <TouchableOpacity
-                    style={[styles.button, { backgroundColor: '#FF4B4B' }]}
+                    style={[styles.button, { backgroundColor: colors.danger }]}
                     onPress={() => setRecordingState('countdown')}
                   >
-                    <Text style={styles.buttonText}>Record</Text>
+                    <AppText style={styles.buttonText}>Record</AppText>
                   </TouchableOpacity>
                 )}
                 {recordingState === 'countdown' && (
                   <View style={styles.countdownContainer}>
-                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 3 ? 1 : 0.3 }]}>3</Animated.Text>
-                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 2 ? 1 : 0.3 }]}>2</Animated.Text>
-                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 1 ? 1 : 0.3 }]}>1</Animated.Text>
+                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 3 ? 1 : 0.3, color: colors.danger }]}>3</Animated.Text>
+                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 2 ? 1 : 0.3, color: colors.danger }]}>2</Animated.Text>
+                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 1 ? 1 : 0.3, color: colors.danger }]}>1</Animated.Text>
                   </View>
                 )}
                 {recordingState === 'recording' && (
                   <View style={styles.recordingRow}>
-                    <Animated.View style={[styles.blinkDot, { opacity: blinkAnim }]} />
-                    <Text style={styles.recordingText}>Recording</Text>
-                    <Text style={styles.timerText}>{timer}s</Text>
+                    <Animated.View style={[styles.blinkDot, { opacity: blinkAnim, backgroundColor: colors.danger }]} />
+                    <AppText style={[styles.recordingText, { color: colors.danger }]}>Recording</AppText>
+                    <AppText style={[styles.timerText, { color: colors.danger }]}>{timer}s</AppText>
                   </View>
                 )}
                 {showDone && recordingState === 'recording' && (
-                  <TouchableOpacity style={styles.button} onPress={handleDone}>
-                    <Text style={styles.buttonText}>Done</Text>
+                  <TouchableOpacity style={[styles.button, { backgroundColor: colors.success }]} onPress={handleDone}>
+                    <AppText style={styles.buttonText}>Done</AppText>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity style={styles.link} onPress={goBack}>
-                  <Text style={styles.linkText}>Back</Text>
+                  <AppText style={[styles.linkText, { color: '#fff' }]}>Back</AppText>
                 </TouchableOpacity>
               </View>
             </CameraView>
@@ -183,7 +220,6 @@ const ExerciseScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   centered: {
     flex: 1,
@@ -193,14 +229,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     marginBottom: 16,
-    color: '#1CB0F6',
+    textAlign: 'center',
+  },
+  setInfo: {
+    fontSize: 20,
+    fontFamily: 'Nunito-Bold',
+    marginBottom: 12,
     textAlign: 'center',
   },
   desc: {
     fontSize: 18,
-    color: '#444',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -208,7 +248,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   button: {
-    backgroundColor: '#1CB0F6',
     borderRadius: 16,
     paddingHorizontal: 32,
     paddingVertical: 12,
@@ -217,14 +256,13 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 18,
   },
   link: {
     marginTop: 8,
   },
   linkText: {
-    color: '#1CB0F6',
     fontSize: 16,
     textDecorationLine: 'underline',
   },
@@ -249,8 +287,7 @@ const styles = StyleSheet.create({
   },
   countdownDigit: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#FF4B4B',
+    fontFamily: 'Nunito-Bold',
   },
   recordingRow: {
     flexDirection: 'row',
@@ -261,19 +298,16 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FF4B4B',
     marginRight: 8,
   },
   recordingText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF4B4B',
+    fontFamily: 'Nunito-Bold',
     marginRight: 16,
   },
   timerText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FF4B4B',
+    fontFamily: 'Nunito-Bold',
   },
 });
 

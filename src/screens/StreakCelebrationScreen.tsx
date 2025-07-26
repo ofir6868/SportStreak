@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import AppText from '../components/AppText';
 
 const StreakCelebrationScreen = () => {
   const navigation = useNavigation<any>();
@@ -9,14 +10,14 @@ const StreakCelebrationScreen = () => {
   const { streak } = route.params || { streak: 1 };
 
   return (
-    <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }]}> 
+    <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
       <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
         <Image source={require('../../assets/flame.gif')} style={{ width: 100, height: 100 }} contentFit="contain" />
       </View>
-      <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#FFA500', marginBottom: 12, textAlign: 'center' }}>Streak Up!</Text>
-      <Text style={{ fontSize: 20, color: '#444', marginBottom: 24, textAlign: 'center' }}>You're on a {streak}-day streak!</Text>
+      <AppText style={{ fontSize: 32, fontFamily: 'Nunito-Bold', color: '#FFA500', marginBottom: 12, textAlign: 'center' }}>Streak Up!</AppText>
+      <AppText style={{ fontSize: 20, color: '#444', marginBottom: 24, textAlign: 'center' }}>You're on a {streak}-day streak!</AppText>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.buttonText}>Keep it burning!</Text>
+        <AppText style={styles.buttonText}>Keep it burning!</AppText>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -25,7 +26,6 @@ const StreakCelebrationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   button: {
     backgroundColor: '#1CB0F6',
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 18,
   },
 });

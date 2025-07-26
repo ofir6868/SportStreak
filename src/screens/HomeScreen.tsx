@@ -1,14 +1,42 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import TopStatusBar from '../components/TopStatusBar';
 import LearningPath from '../components/LearningPath';
 import BottomNavBar from '../components/BottomNavBar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import AppText from '../components/AppText';
+import { useProgress } from '../components/ProgressContext';
 
 
 const HomeScreen = ({ navigation }: any) => {
+  const { forceResetQuests, isDarkMode } = useProgress();
+  const [isLearningPathVisible, setIsLearningPathVisible] = useState(true);
+  
+  useEffect(() => {
+    console.log('HomeScreen: Component mounted');
+    console.log('HomeScreen: Platform:', Platform.OS);
+    
+    // Check if LearningPath should be visible
+    const checkLearningPathVisibility = () => {
+      try {
+        // Add a small delay to ensure everything is loaded
+        setTimeout(() => {
+          setIsLearningPathVisible(true);
+          console.log('HomeScreen: LearningPath should be visible');
+        }, 100);
+      } catch (error) {
+        console.error('HomeScreen: Error checking LearningPath visibility:', error);
+      }
+    };
+    
+    checkLearningPathVisibility();
+  }, []);
+  
   const handleRestart = async () => {
+    // Force reset quests to clear cache
+    forceResetQuests();
+    
     await AsyncStorage.clear();
     navigation.replace('Welcome');
     setTimeout(() => {
@@ -18,20 +46,52 @@ const HomeScreen = ({ navigation }: any) => {
       }
     }, 500);
   };
+
+  // Dark mode colors
+  const colors = {
+    background: isDarkMode ? '#1a1a1a' : '#fff',
+    cardBackground: isDarkMode ? '#2a2a2a' : '#fff',
+    text: isDarkMode ? '#ffffff' : '#222',
+    textSecondary: isDarkMode ? '#cccccc' : '#888',
+    primary: '#1CB0F6',
+    accent: '#FFA800',
+    border: isDarkMode ? '#404040' : '#e0e0e0',
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.stickyHeader}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
         <TopStatusBar />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', padding: 8, position:'absolute', right:0, top: 62   }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', padding: 8, position:'absolute', right:0, top: 92   }}>
           <TouchableOpacity style={styles.restartButton} onPress={handleRestart}>
-            <Text style={styles.restartText}>Restart</Text>
+            <AppText style={styles.restartText}>Restart</AppText>
           </TouchableOpacity>
         </View>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <LearningPath />
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        // Add iOS-specific props
+        bounces={Platform.OS === 'ios'}
+        alwaysBounceVertical={Platform.OS === 'ios'}
+        // Add error handling
+        onScrollBeginDrag={() => console.log('HomeScreen: Scroll started')}
+        onScrollEndDrag={() => console.log('HomeScreen: Scroll ended')}
+      >
+        {isLearningPathVisible && (
+          <View style={styles.learningPathContainer}>
+            <LearningPath />
+          </View>
+        )}
+        {!isLearningPathVisible && (
+          <View style={styles.fallbackContainer}>
+            <AppText style={[styles.fallbackText, { color: colors.text }]}>
+              Loading learning path...
+            </AppText>
+          </View>
+        )}
       </ScrollView>
-      <View style={styles.stickyFooter}>
+      <View style={[styles.stickyFooter, { backgroundColor: colors.background }]}>
         <BottomNavBar />
       </View>
     </View>
@@ -41,22 +101,33 @@ const HomeScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   stickyHeader: {
     zIndex: 10,
-    backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 100,
+  },
+  learningPathContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  fallbackText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   stickyFooter: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#fff',
     zIndex: 10,
   },
   restartButton: {
@@ -68,7 +139,7 @@ const styles = StyleSheet.create({
   },
   restartText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 16,
   },
 });

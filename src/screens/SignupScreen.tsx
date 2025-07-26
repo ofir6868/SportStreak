@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useProgress } from '../components/ProgressContext';
+import AppText from '../components/AppText';
 
 const SignupScreen = ({ navigation }) => {
   const [age, setAge] = useState('');
@@ -8,20 +10,20 @@ const SignupScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const { setNickname } = useProgress();
 
   const handleSignup = async () => {
     if (!age || !email || !password) {
       setError('Please fill all fields.');
       return;
     }
-    // Persist user as authenticated
     await AsyncStorage.setItem('isAuthenticated', 'true');
     navigation.replace('PresetSelection');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create your profile</Text>
+      <AppText style={styles.title}>Create your profile</AppText>
       <TextInput
         style={styles.input}
         placeholder="Age"
@@ -29,7 +31,7 @@ const SignupScreen = ({ navigation }) => {
         value={age}
         onChangeText={setAge}
       />
-      <Text style={styles.privacy}>Providing your age ensures you get the right experience. See our Privacy Policy.</Text>
+      <AppText style={styles.privacy}>Providing your age ensures you get the right experience. See our Privacy Policy.</AppText>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -47,20 +49,20 @@ const SignupScreen = ({ navigation }) => {
           onChangeText={setPassword}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Text style={styles.eye}>{showPassword ? '🙈' : '👁️'}</Text>
+          <AppText style={styles.eye}>{showPassword ? '🙈' : '👁️'}</AppText>
         </TouchableOpacity>
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <AppText style={styles.error}>{error}</AppText> : null}
       <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
+        <AppText style={styles.buttonText}>CREATE ACCOUNT</AppText>
       </TouchableOpacity>
-      <Text style={styles.or}>OR</Text>
+      <AppText style={styles.or}>OR</AppText>
       <TouchableOpacity style={styles.fbButton}>
-        <Text style={styles.fbText}>FACEBOOK</Text>
+        <AppText style={styles.fbText}>FACEBOOK</AppText>
       </TouchableOpacity>
-      <Text style={styles.terms}>By signing up, you agree to our Terms and Privacy Policy.</Text>
+      <AppText style={styles.terms}>By signing up, you agree to our Terms and Privacy Policy.</AppText>
       <TouchableOpacity onPress={() => navigation.replace('Login')}>
-        <Text style={styles.login}>Have an account? LOG IN</Text>
+        <AppText style={styles.login}>Have an account? LOG IN</AppText>
       </TouchableOpacity>
     </View>
   );
@@ -75,7 +77,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 16,
   },
   or: {
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
   },
   fbText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 16,
   },
   terms: {
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
     color: '#1CB0F6',
     textAlign: 'center',
     marginTop: 12,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
   },
   error: {
     color: 'red',

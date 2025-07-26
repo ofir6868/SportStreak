@@ -1,7 +1,8 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { useProgress } from './ProgressContext';
 import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
+import AppText from './AppText';
 
 const SectionBanner = () => {
   const { presetKey, setPresetKey } = useProgress();
@@ -22,11 +23,11 @@ const SectionBanner = () => {
   return (
     <View style={styles.banner}>
       <View>
-        <Text style={styles.section}>{EXERCISE_PRESETS[presetKey].label} Path</Text>
-        <Text style={styles.title}>Keep your streak alive!</Text>
+        <AppText style={styles.section}>{EXERCISE_PRESETS[presetKey].label} Path</AppText>
+        <AppText style={styles.title}>Keep your streak alive!</AppText>
       </View>
       <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuButton} activeOpacity={0.7}>
-        <Text style={styles.menuIcon}>≡</Text>
+        <AppText style={styles.menuIcon}>≡</AppText>
       </TouchableOpacity>
       {menuVisible && (
         <>
@@ -34,13 +35,13 @@ const SectionBanner = () => {
           <View style={styles.dropdownMenu}>
             {presetKeys.map((key) => (
               <TouchableOpacity key={key} style={styles.menuItem} onPress={() => handleSelect(key)}>
-                <Text style={[styles.menuItemText, presetKey === key && styles.menuItemTextActive]}>
+                <AppText style={[styles.menuItemText, presetKey === key && styles.menuItemTextActive]}>
                   {EXERCISE_PRESETS[key].label}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.addCustomButton} onPress={handleAddCustom}>
-              <Text style={styles.addCustomText}>+ Add Custom Preset</Text>
+              <AppText style={styles.addCustomText}>+ Add Custom Preset</AppText>
             </TouchableOpacity>
           </View>
         </>
@@ -70,14 +71,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     letterSpacing: 1,
-    fontWeight: '600',
+    fontFamily: 'Nunito-SemiBold',
     textTransform: 'uppercase',
     marginBottom: 2,
   },
   title: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
   },
   menuButton: {
     padding: 8,
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
   menuIcon: {
     color: '#fff',
     fontSize: 22,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
   },
   dropdownMenu: {
     position: 'absolute',
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   },
   menuItemTextActive: {
     color: '#58CC02',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
   },
   addCustomButton: {
     marginTop: 4,
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
   },
   addCustomText: {
     color: '#1CB0F6',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 15,
   },
   overlay: {

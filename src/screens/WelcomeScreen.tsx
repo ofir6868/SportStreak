@@ -5,13 +5,9 @@ import AppText from '../components/AppText';
 
 const WelcomeScreen = ({ navigation }: { navigation: any }) => {
   const handleGetStarted = async () => {
-    await AsyncStorage.setItem('onboardingDone', 'true');
-    navigation.replace('UserInfo');
+    navigation.replace('PlanSelection');
   };
-  const handleClearStorage = async () => {
-    await AsyncStorage.clear();
-    alert('Local storage cleared! Restart the app to test onboarding.');
-  };
+
   return (
     <View style={styles.container}>
       {/* Mascot and app name at the top */}
@@ -23,7 +19,7 @@ const WelcomeScreen = ({ navigation }: { navigation: any }) => {
       <Image source={require('../../assets/welcome.png')} style={styles.welcomeImage} />
       {/* Motivational pitch */}
       <AppText style={styles.pitch}>
-        Build healthy habits, stay motivated, and crush your fitness goals—one streak at a time!
+        Build healthy habits, stay motivated, and crush your fitness goals — one streak at a time!
       </AppText>
       {/* Get Started button */}
       <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
@@ -36,7 +32,6 @@ const WelcomeScreen = ({ navigation }: { navigation: any }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDFBF8',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -70,7 +65,7 @@ const styles = StyleSheet.create({
     color: '#222',
     textAlign: 'center',
     marginBottom: 32,
-    fontWeight: '600',
+    fontFamily: 'Nunito-SemiBold',
     lineHeight: 30,
   },
   button: {
@@ -84,7 +79,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
   },
 });
 

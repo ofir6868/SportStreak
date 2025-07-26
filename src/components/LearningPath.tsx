@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Image, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useFonts } from 'expo-font';
 import { FontAwesome, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -8,8 +8,17 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProgress } from './ProgressContext';
 import { EXERCISE_PRESETS, ExercisePresetKey, PathCircle } from '../config/exercisePresets';
+import AppText from './AppText';
 
-const { width } = Dimensions.get('window');
+// Use safe dimensions for iOS
+const getSafeDimensions = () => {
+  const { width, height } = Dimensions.get('window');
+  // On iOS, account for safe areas and potential issues
+  const safeWidth = Platform.OS === 'ios' ? Math.min(width, 400) : width;
+  return { width: safeWidth, height };
+};
+
+const { width } = getSafeDimensions();
 const PATH_WIDTH = width * 0.9;
 const BUBBLE_RADIUS = 44;
 const BUBBLE_DIAM = BUBBLE_RADIUS * 2;
@@ -19,10 +28,37 @@ const PATH_X_CENTER = PATH_WIDTH / 2;
 const CURVE_X_OFFSET = 60;
 const VERTICAL_GAP = 140;
 
-// Dedicated ExerciseIcon component
+// Dedicated ExerciseIcon component with better iOS compatibility
 export const ExerciseIcon = ({ name, color = '#1CB0F6', size = 28 }: { name: string, color?: string, size?: number }) => {
-  // MaterialCommunityIcons covers most fitness icons
-  return <MaterialCommunityIcons name={name as typeof MaterialCommunityIcons.glyphMap} size={28} color={color} />;
+  // Add fallback for iOS icon mapping issues
+  const iconMap: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
+    'run': 'run',
+    'run-fast': 'run-fast',
+    'timer': 'timer',
+    'terrain': 'terrain',
+    'road-variant': 'road-variant',
+    'walk': 'walk',
+    'arm-flex': 'arm-flex',
+    'human-handsup': 'human-handsup',
+    'human': 'human',
+    'weight-lifter': 'weight-lifter',
+    'yoga': 'yoga',
+    'tree': 'tree',
+    'dog': 'dog',
+    'bridge': 'bridge',
+    'human-child': 'human-child',
+  };
+
+  const iconName = iconMap[name] || 'run';
+  
+  return (
+    <MaterialCommunityIcons 
+      name={iconName} 
+      size={size} 
+      color={color}
+      style={{ opacity: 1 }} // Ensure visibility on iOS
+    />
+  );
 };
 
 const getBubblePosition = (i: number, numBubbles: number) => {
@@ -49,20 +85,6 @@ const getPathD = (numBubbles: number) => {
   return d;
 };
 
-const statusColors = {
-  start: '#1CB0F6',
-  review: '#58CC02',
-  go: '#1CB0F6',
-  locked: '#E5E5E5',
-};
-
-const statusText = {
-  start: 'Start',
-  review: 'Review',
-  go: 'Go',
-  locked: 'Locked',
-};
-
 const fontMap = {
   Nunito: require('../../assets/fonts/Nunito-Bold.ttf'),
   'Nunito-SemiBold': require('../../assets/fonts/Nunito-SemiBold.ttf'),
@@ -82,8 +104,104 @@ const initialCompleted = [false, false, false, false, false, false];
 const LearningPath = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [fontsLoaded] = useFonts(fontMap);
-  const { progress, completed, presetKey } = useProgress();
-  const presetCircles = EXERCISE_PRESETS[presetKey].circles;
+  const { progress, completed, presetKey, isDarkMode } = useProgress();
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [testMode, setTestMode] = useState(false);
+
+  // Add console logging for debugging
+  useEffect(() => {
+    console.log('LearningPath: Component mounted');
+    console.log('LearningPath: Platform:', Platform.OS);
+    console.log('LearningPath: Fonts loaded:', fontsLoaded);
+    console.log('LearningPath: Progress:', progress);
+    console.log('LearningPath: Completed:', completed);
+    console.log('LearningPath: Preset key:', presetKey);
+  }, [fontsLoaded, progress, completed, presetKey]);
+
+  // Add error boundary and data loading check
+  useEffect(() => {
+    const checkData = async () => {
+      try {
+        console.log('LearningPath: Checking data...');
+        // Ensure we have valid data
+        if (progress && completed && presetKey) {
+          console.log('LearningPath: Data is valid, setting loaded to true');
+          setIsDataLoaded(true);
+        } else {
+          console.log('LearningPath: Data not ready, waiting...');
+          // Wait a bit for data to load
+          setTimeout(() => {
+            if (progress && completed && presetKey) {
+              console.log('LearningPath: Data loaded after delay');
+              setIsDataLoaded(true);
+            } else {
+              console.log('LearningPath: Data still not ready, showing error');
+              setError('Data not loaded properly');
+              // Enable test mode if data fails to load
+              setTestMode(true);
+            }
+          }, 1000);
+        }
+      } catch (err) {
+        console.error('LearningPath: Error in checkData:', err);
+        setError('Failed to load learning path data');
+        console.error('LearningPath error:', err);
+        setTestMode(true);
+      }
+    };
+    
+    checkData();
+  }, [progress, completed, presetKey]);
+
+  // Get preset circles with fallback
+  const presetCircles = EXERCISE_PRESETS[presetKey]?.circles || EXERCISE_PRESETS['strength'].circles;
+
+  // Dark mode color scheme with excellent contrast
+  const colors = {
+    // Path colors
+    pathStroke: isDarkMode ? '#58CC02' : '#58CC02', // Keep green for path
+    pathStrokeWidth: 10,
+    
+    // Bubble colors
+    bubbleBackground: isDarkMode ? '#2a2a2a' : '#fff',
+    bubbleBorderLocked: isDarkMode ? '#555555' : '#B0B0B0',
+    bubbleShadowLocked: isDarkMode ? '#000' : '#000',
+    
+    // Status colors
+    start: '#1CB0F6',
+    review: '#58CC02',
+    go: '#1CB0F6',
+    locked: isDarkMode ? '#555555' : '#E5E5E5',
+    
+    // Icon colors
+    iconBackground: isDarkMode ? '#1a1a1a' : '#F4F8FB',
+    iconLocked: isDarkMode ? '#888888' : '#B0B0B0',
+    iconActive: '#ffffff',
+    
+    // Text colors
+    titleLocked: isDarkMode ? '#888888' : '#B0B0B0',
+    titleActive: isDarkMode ? '#ffffff' : '#1CB0F6',
+    subtitleLocked: isDarkMode ? '#666666' : '#B0B0B0',
+    subtitleActive: isDarkMode ? '#cccccc' : '#888',
+    
+    // Status box colors
+    statusBoxLocked: isDarkMode ? '#555555' : '#B0B0B0',
+    statusText: '#ffffff',
+    
+    // Check mark
+    checkMark: '#58CC02',
+    
+    // Container background
+    containerBackground: isDarkMode ? '#1a1a1a' : '#fff',
+  };
+
+  const statusText = {
+    start: 'Start',
+    review: 'Review',
+    go: 'Go',
+    locked: 'Locked',
+  };
 
   // Dynamically assign status based on progress/completed
   const getBubbleStatus = (i: number): Status => {
@@ -107,29 +225,110 @@ const LearningPath = () => {
   const lastBubbleY = VERTICAL_GAP * (numBubbles - 1) + 80;
   const minContainerHeight = lastBubbleY + BUBBLE_RADIUS + 40;
 
-  // PATCH: Always render, show warning if fonts not loaded
-  // if (!fontsLoaded) return null;
+  // Show loading state
+  if (!isDataLoaded) {
+    return (
+      <View style={[styles.outerContainer, { backgroundColor: colors.containerBackground }]}>
+        <View style={styles.centeredContainer}>
+          <View style={[styles.innerContainer, { minHeight: minContainerHeight }]}>
+            <AppText style={[styles.loadingText, { color: colors.titleActive }]}>
+              Loading learning path...
+            </AppText>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error && !testMode) {
+    return (
+      <View style={[styles.outerContainer, { backgroundColor: colors.containerBackground }]}>
+        <View style={styles.centeredContainer}>
+          <View style={[styles.innerContainer, { minHeight: minContainerHeight }]}>
+            <AppText style={[styles.errorText, { color: '#FF4B4B' }]}>
+              {error}
+            </AppText>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => {
+                setError(null);
+                setIsDataLoaded(false);
+              }}
+            >
+              <AppText style={styles.retryText}>Retry</AppText>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.retryButton, { marginTop: 10, backgroundColor: '#58CC02' }]}
+              onPress={() => setTestMode(true)}
+            >
+              <AppText style={styles.retryText}>Test Mode</AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Test mode - simple rendering
+  if (testMode) {
+    return (
+      <View style={[styles.outerContainer, { backgroundColor: colors.containerBackground }]}>
+        <View style={styles.centeredContainer}>
+          <View style={[styles.innerContainer, { minHeight: 400 }]}>
+            <AppText style={[styles.testTitle, { color: colors.titleActive }]}>
+              Learning Path Test Mode
+            </AppText>
+            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+              Platform: {Platform.OS}
+            </AppText>
+            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+              Fonts Loaded: {fontsLoaded ? 'Yes' : 'No'}
+            </AppText>
+            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+              Preset: {presetKey}
+            </AppText>
+            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+              Circles: {presetCircles?.length || 0}
+            </AppText>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => {
+                setTestMode(false);
+                setError(null);
+                setIsDataLoaded(false);
+              }}
+            >
+              <AppText style={styles.retryText}>Exit Test Mode</AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.outerContainer}>
-      {!fontsLoaded && (
-        <></>
-      )}
+    <View style={[styles.outerContainer, { backgroundColor: colors.containerBackground }]}>
       <View style={styles.centeredContainer}>
         <View style={[styles.innerContainer, { minHeight: minContainerHeight }]}>
-          <Svg width={PATH_WIDTH} height={pathHeight} style={styles.svg}>
-            <Path
-              d={getPathD(numBubbles)}
-              stroke="#58CC02"
-              strokeWidth={10}
-              fill="none"
-              strokeLinecap="round"
-            />
-          </Svg>
+          {/* Add fallback for SVG rendering issues on iOS */}
+          <View style={styles.svgContainer}>
+            <Svg width={PATH_WIDTH} height={pathHeight} style={styles.svg}>
+              <Path
+                d={getPathD(numBubbles)}
+                stroke={colors.pathStroke}
+                strokeWidth={colors.pathStrokeWidth}
+                fill="none"
+                strokeLinecap="round"
+              />
+            </Svg>
+          </View>
           {presetCircles.map((bubble, i) => {
             const { x, y } = getBubblePosition(i, numBubbles);
             const status = getBubbleStatus(i);
             const isLocked = status === 'locked';
+            const statusColor = colors[status];
+            
             return (
               <TouchableOpacity
                 key={bubble.id}
@@ -138,13 +337,13 @@ const LearningPath = () => {
                   {
                     left: x - BUBBLE_RADIUS,
                     top: y - BUBBLE_RADIUS,
-                    backgroundColor: isLocked ? '#F2F2F2' : '#fff',
-                    borderColor: isLocked ? '#B0B0B0' : statusColors[status],
+                    backgroundColor: colors.bubbleBackground,
+                    borderColor: isLocked ? colors.bubbleBorderLocked : statusColor,
                     borderWidth: 4,
-                    shadowColor: statusColors[status],
+                    shadowColor: isLocked ? colors.bubbleShadowLocked : statusColor,
                     shadowOpacity: !isLocked ? 0.2 : 0.05,
                     shadowRadius: 12,
-                    elevation: 4,
+                    elevation: Platform.OS === 'android' ? 4 : 0, // iOS doesn't use elevation
                     opacity: 1,
                   },
                 ]}
@@ -152,62 +351,73 @@ const LearningPath = () => {
                 disabled={isLocked}
                 activeOpacity={!isLocked ? 0.7 : 1}
               >
-                <View style={[styles.iconCircle, isLocked && { backgroundColor: '#E0E0E0' }]}> 
-                  <ExerciseIcon name={bubble.icon} size={28} color={isLocked ? '#B0B0B0' : statusColors[status]} />
+                <View style={[styles.iconCircle, { backgroundColor: isLocked ? colors.iconBackground : statusColor }]}> 
+                  <ExerciseIcon 
+                    name={bubble.icon} 
+                    size={28} 
+                    color={isLocked ? colors.iconLocked : colors.iconActive} 
+                  />
                 </View>
-                <Text
+                <AppText
                   style={[
                     styles.title,
                     {
-                      color: isLocked ? '#B0B0B0' : statusColors[status],
-                      fontFamily: fontsLoaded ? 'Nunito' : undefined,
+                      color: isLocked ? colors.titleLocked : colors.titleActive,
+                      fontFamily: fontsLoaded ? 'Nunito' : Platform.OS === 'ios' ? 'System' : undefined,
                     },
                   ]}
                 >
                   {bubble.title}
-                </Text>
-                <Text
+                </AppText>
+                <AppText
                   style={[
                     styles.subtitle,
                     {
-                      fontFamily: fontsLoaded ? 'Nunito-Regular' : undefined,
-                      color: isLocked ? '#B0B0B0' : '#888',
+                      fontFamily: fontsLoaded ? 'Nunito-Regular' : Platform.OS === 'ios' ? 'System' : undefined,
+                      color: isLocked ? colors.subtitleLocked : colors.subtitleActive,
                     },
                   ]}
                 >
                   {bubble.subtitle}
-                </Text>
+                </AppText>
                 <View
                   style={[
                     styles.statusBox,
                     {
-                      backgroundColor: isLocked ? '#B0B0B0' : statusColors[status],
+                      backgroundColor: isLocked ? colors.statusBoxLocked : statusColor,
                     },
                   ]}
                 >
-                  <Text
+                  <AppText
                     style={[
                       styles.statusText,
                       {
-                        fontFamily: fontsLoaded ? 'Nunito-SemiBold' : undefined,
-                        color: isLocked ? '#fff' : '#fff',
+                        fontFamily: fontsLoaded ? 'Nunito-SemiBold' : Platform.OS === 'ios' ? 'System' : undefined,
+                        color: colors.statusText,
                       },
                     ]}
                   >
                     {statusText[status]}
-                  </Text>
+                  </AppText>
                 </View>
                 {completed[i] && (
-                  <Text
-                    style={{ position: 'absolute', top: 4, right: 4, fontSize: 16, color: '#58CC02' }}
-                  >
-                    ✓
-                  </Text>
+                  <MaterialCommunityIcons
+                    name="check-bold"
+                    size={20}
+                    color={colors.checkMark}
+                    style={{ position: 'absolute', top: -8, right: -8, zIndex: 10 }}
+                  />
                 )}
               </TouchableOpacity>
             );
           })}
-          <Image source={require('../../assets/mascot.png')} style={styles.mascot} resizeMode="contain" />
+          <Image 
+            source={require('../../assets/mascot.png')} 
+            style={styles.mascot} 
+            resizeMode="contain"
+            // Add onError handler for iOS image loading issues
+            onError={() => console.log('Mascot image failed to load')}
+          />
         </View>
       </View>
     </View>
@@ -218,7 +428,6 @@ const styles = StyleSheet.create({
   outerContainer: {
     width: '100%',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   centeredContainer: {
     width: '100%',
@@ -242,6 +451,14 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingBottom: 40,
   },
+  svgContainer: {
+    width: PATH_WIDTH,
+    height: VERTICAL_GAP * (NUM_BUBBLES - 1) + 200,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 1,
+  },
   svg: {
     position: 'absolute',
     left: 0,
@@ -255,7 +472,6 @@ const styles = StyleSheet.create({
     borderRadius: BUBBLE_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     zIndex: 2,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -267,19 +483,17 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F4F8FB',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 1,
   },
   title: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     textAlign: "center"
   },
   subtitle: {
     fontSize: 11,
-    color: '#888',
     marginBottom: 2,
   },
   statusBox: {
@@ -288,18 +502,58 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     marginTop: 6,
     alignSelf: 'center',
-    backgroundColor: '#1CB0F6',
     shadowColor: '#1CB0F6',
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
   },
   statusText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 13,
     textTransform: 'capitalize',
     textAlign: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 100,
+  },
+  errorText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 100,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#1CB0F6',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  testTitle: {
+    fontSize: 20,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: 'bold',
+  },
+  testText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  debugText: {
+    fontSize: 12,
+    textAlign: 'center',
+    position: 'absolute',
+    top: 10,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
 });
 

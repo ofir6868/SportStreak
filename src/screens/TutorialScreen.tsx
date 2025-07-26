@@ -132,12 +132,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#222',
     flex: 1,
-    fontWeight: '500',
+    fontFamily: 'Nunito-Regular',
   },
   comingSoonTitle: {
     fontSize: 16,
     color: '#888',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     marginTop: 10,
     marginBottom: 6,
     alignSelf: 'flex-start',
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 11,
   },
   button: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Nunito-Bold',
     fontSize: 16,
   }
 });
