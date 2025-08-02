@@ -50,6 +50,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
       }).start(() => {
         isAnimatingRef.current = false;
         setIsAnimating(false);
+        currentSlidePosition.current = 300;
       });
     } else {
       isAnimatingRef.current = true;
@@ -61,6 +62,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
       }).start(() => {
         isAnimatingRef.current = false;
         setIsAnimating(false);
+        currentSlidePosition.current = -300;
       });
     }
   }, [isVisible]);
@@ -109,6 +111,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
   const [isAnimating, setIsAnimating] = useState(false);
   const [gestureOffset] = useState(new Animated.Value(0));
   const isAnimatingRef = useRef(false);
+  const currentSlidePosition = useRef(300);
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationY: gestureOffset } }],
@@ -126,10 +129,14 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
       setIsDragging(false);
       const { translationY } = event.nativeEvent;
       
-      if (translationY > 50) {
-        // Swipe down - close panel
+      if (translationY < -50) {
+        // Swipe up - close panel
         isAnimatingRef.current = true;
         setIsAnimating(true);
+        // Calculate the current position including the gesture offset
+        const currentPosition = currentSlidePosition.current + translationY;
+        // Set the slideAnim to the current dragged position first
+        slideAnim.setValue(currentPosition);
         Animated.timing(slideAnim, {
           toValue: -300,
           duration: 300,
@@ -137,6 +144,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
         }).start(() => {
           isAnimatingRef.current = false;
           setIsAnimating(false);
+          currentSlidePosition.current = -300;
           onClose();
         });
       } else {
@@ -150,6 +158,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
         }).start(() => {
           isAnimatingRef.current = false;
           setIsAnimating(false);
+          currentSlidePosition.current = 300;
         });
       }
       // Reset the gesture offset
@@ -173,10 +182,14 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
       setIsDragging(false);
       const { translationY } = event.nativeEvent;
       
-      if (translationY > 50) {
-        // Dragged down more than 50px - close panel
+      if (translationY < -50) {
+        // Dragged up more than 50px - close panel
         isAnimatingRef.current = true;
         setIsAnimating(true);
+        // Calculate the current position including the gesture offset
+        const currentPosition = currentSlidePosition.current + translationY;
+        // Set the slideAnim to the current dragged position first
+        slideAnim.setValue(currentPosition);
         Animated.timing(slideAnim, {
           toValue: -300,
           duration: 300,
@@ -184,6 +197,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
         }).start(() => {
           isAnimatingRef.current = false;
           setIsAnimating(false);
+          currentSlidePosition.current = -300;
           onClose();
         });
       } else {
@@ -197,6 +211,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
         }).start(() => {
           isAnimatingRef.current = false;
           setIsAnimating(false);
+          currentSlidePosition.current = 300;
         });
       }
       // Reset the gesture offset
@@ -381,7 +396,7 @@ const styles = StyleSheet.create({
     top: -300, // Start off-screen
     left: 0,
     right: 0,
-    zIndex: 1000,
+    zIndex: 9999,
     paddingTop: 35,
     paddingBottom: 20,
     paddingHorizontal: 16,
@@ -389,9 +404,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 8,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    elevation: 20,
   },
   handleContainer: {
     flexDirection: 'row',

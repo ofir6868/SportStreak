@@ -5,19 +5,22 @@ import AppText from './AppText';
 import { useProgress } from './ProgressContext';
 import { useNavigation } from '@react-navigation/native';
 import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
-import SchedulePanel from './SchedulePanel';
+
+interface TopStatusBarProps {
+  onSchedulePress: () => void;
+  schedulePanelVisible: boolean;
+}
 
 const ICON_SIZE = 20;
 const ICON_CONTAINER_SIZE = 32;
 
-const TopStatusBar = () => {
+const TopStatusBar: React.FC<TopStatusBarProps> = ({ onSchedulePress, schedulePanelVisible }) => {
   const { streak, streakUpdatedToday, nickname, presetKey, setPresetKey, diamonds, isDarkMode } = useProgress();
   const navigation = useNavigation<any>();
 
   const [diamondModal, setDiamondModal] = React.useState(false);
   const [streakModal, setStreakModal] = React.useState(false);
   const [presetModal, setPresetModal] = React.useState(false);
-  const [schedulePanelVisible, setSchedulePanelVisible] = React.useState(false);
 
   // Dark mode colors
   const colors = {
@@ -45,7 +48,7 @@ const TopStatusBar = () => {
   };
 
   const currentPreset = EXERCISE_PRESETS[presetKey];
-  const currentPresetIcon = currentPreset.circles[0].icon;
+  const currentPresetIcon = currentPreset.paths[0]?.icon || 'run';
 
   return (
     <View style={styles.wrapper}>
@@ -67,7 +70,7 @@ const TopStatusBar = () => {
         <View style={styles.statsRow}>
           {/* Schedule Button */}
           <TouchableOpacity 
-            onPress={() => setSchedulePanelVisible(true)}
+            onPress={onSchedulePress}
             activeOpacity={0.8}
             style={[styles.scheduleButton, schedulePanelVisible && styles.scheduleButtonActive]}
           >
@@ -120,7 +123,7 @@ const TopStatusBar = () => {
                 onPress={() => handlePresetSelect(key as ExercisePresetKey)}
               >
                 <MaterialCommunityIcons 
-                  name={preset.circles[0].icon as any} 
+                  name={preset.paths[0]?.icon as any} 
                   size={24} 
                   color={presetKey === key ? '#fff' : colors.primary} 
                 />
@@ -181,11 +184,7 @@ const TopStatusBar = () => {
         </View>
       </Modal>
 
-      {/* Schedule Panel */}
-      <SchedulePanel 
-        isVisible={schedulePanelVisible}
-        onClose={() => setSchedulePanelVisible(false)}
-      />
+
       
     </View>
   );

@@ -1,7 +1,7 @@
 import { registerRootComponent } from 'expo';
 import { Platform } from 'react-native';
 
-// Conditionally import gesture handler only on native platforms
+// Import gesture handler only on native platforms to avoid web compatibility issues
 if (Platform.OS !== 'web') {
   try {
     require('react-native-gesture-handler');
@@ -9,6 +9,9 @@ if (Platform.OS !== 'web') {
     console.warn('react-native-gesture-handler not available');
   }
 }
+
+// Import polyfill for gesture handler
+import './src/polyfills/gestureHandlerPolyfill';
 
 import App from './App';
 

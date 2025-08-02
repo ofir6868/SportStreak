@@ -1,31 +1,39 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ExercisePresetKey } from '../config/exercisePresets';
+import { ExercisePresetKey, PathKey } from '../config/exercisePresets';
 import { Quest, generateDailyQuests, generateWeeklyQuests } from '../config/questConfig';
 import { calculateQuestProgress, QuestTrackingParams } from '../config/questTracking';
 
 const NUM_BUBBLES = 6;
 const initialProgressArr = [false, false, false, false, false, false];
 
-// Per-preset progress/completed
-const initialProgress: Record<ExercisePresetKey, boolean[]> = {
-  running: [...initialProgressArr],
-  strength: [...initialProgressArr],
-  yoga: [...initialProgressArr],
+// Per-path progress/completed tracking
+const initialProgress: Record<PathKey, boolean[]> = {
+  pushUpsPath: [...initialProgressArr],
+  flexFlow: [...initialProgressArr],
+  sprintBasics: [...initialProgressArr],
+  cardioBlast: [...initialProgressArr],
+  corePower: [...initialProgressArr],
+  balanceFlow: [...initialProgressArr],
 };
-const initialCompleted: Record<ExercisePresetKey, boolean[]> = {
-  running: [...initialProgressArr],
-  strength: [...initialProgressArr],
-  yoga: [...initialProgressArr],
+const initialCompleted: Record<PathKey, boolean[]> = {
+  pushUpsPath: [...initialProgressArr],
+  flexFlow: [...initialProgressArr],
+  sprintBasics: [...initialProgressArr],
+  cardioBlast: [...initialProgressArr],
+  corePower: [...initialProgressArr],
+  balanceFlow: [...initialProgressArr],
 };
 
 const ProgressContext = createContext({
-  progress: initialProgress['strength'],
-  completed: initialCompleted['strength'],
+  progress: initialProgress['pushUpsPath'],
+  completed: initialCompleted['pushUpsPath'],
   setProgress: (arr: boolean[]) => {},
   setCompleted: (arr: boolean[]) => {},
   presetKey: 'strength' as ExercisePresetKey,
   setPresetKey: (key: ExercisePresetKey) => {},
+  pathKey: 'pushUpsPath' as PathKey,
+  setPathKey: (key: PathKey) => {},
   markExerciseComplete: async (idx: number, additionalParams?: QuestTrackingParams) => ({ streaked: false, newStreak: 0 }),
   acknowledgeRestDay: async () => ({ streaked: false, newStreak: 0 }),
   streak: 0,
@@ -65,6 +73,7 @@ const ProgressContext = createContext({
 
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [presetKey, setPresetKeyState] = useState<ExercisePresetKey>('strength');
+  const [pathKey, setPathKeyState] = useState<PathKey>('pushUpsPath');
   const [progressMap, setProgressMap] = useState(initialProgress);
   const [completedMap, setCompletedMap] = useState(initialCompleted);
   const [streak, setStreak] = useState(0);
@@ -90,9 +99,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         console.log('ProgressContext: Starting data load...');
         
-        const [name, preset, diamondsData, lastReset, dailyQuestsData, weeklyQuestsData, darkModeData, totalWorkoutsData, exerciseModeData, workoutDaysData, selectedDaysData] = await Promise.all([
+        const [name, preset, path, diamondsData, lastReset, dailyQuestsData, weeklyQuestsData, darkModeData, totalWorkoutsData, exerciseModeData, workoutDaysData, selectedDaysData] = await Promise.all([
           AsyncStorage.getItem('nickname'),
           AsyncStorage.getItem('selectedPreset'),
+          AsyncStorage.getItem('selectedPath'),
           AsyncStorage.getItem('diamonds'),
           AsyncStorage.getItem('lastQuestReset'),
           AsyncStorage.getItem('dailyQuests'),
@@ -107,6 +117,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log('ProgressContext: Data loaded from AsyncStorage:', {
           name: !!name,
           preset,
+          path,
           diamondsData,
           lastReset,
           dailyQuestsData: !!dailyQuestsData,
@@ -118,6 +129,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (name && !nickname) setNicknameState(name);
         if (preset && ['running', 'strength', 'yoga'].includes(preset)) {
           setPresetKeyState(preset as ExercisePresetKey);
+        }
+        if (path && ['pushUpsPath', 'flexFlow', 'sprintBasics', 'cardioBlast', 'corePower', 'balanceFlow'].includes(path)) {
+          setPathKeyState(path as PathKey);
         }
         if (diamondsData) setDiamonds(parseInt(diamondsData));
         if (totalWorkoutsData) setTotalWorkouts(parseInt(totalWorkoutsData));
@@ -171,6 +185,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (error) {
         // Set default values on error
         setPresetKeyState('strength');
+        setPathKeyState('pushUpsPath');
         setDiamonds(500);
         setTotalWorkouts(0);
         setLastQuestReset(new Date().toISOString().slice(0, 10));
@@ -196,15 +211,20 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const setProgress = (arr: boolean[]) => {
-    setProgressMap((prev) => ({ ...prev, [presetKey]: arr }));
+    setProgressMap((prev) => ({ ...prev, [pathKey]: arr }));
   };
   const setCompleted = (arr: boolean[]) => {
-    setCompletedMap((prev) => ({ ...prev, [presetKey]: arr }));
+    setCompletedMap((prev) => ({ ...prev, [pathKey]: arr }));
   };
 
   const setPresetKey = (key: ExercisePresetKey) => {
     setPresetKeyState(key);
     AsyncStorage.setItem('selectedPreset', key);
+  };
+
+  const setPathKey = (key: PathKey) => {
+    setPathKeyState(key);
+    AsyncStorage.setItem('selectedPath', key);
   };
 
   const addDiamonds = (amount: number) => {
@@ -418,14 +438,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const markExerciseComplete = async (idx: number, additionalParams?: QuestTrackingParams): Promise<{ streaked: boolean, newStreak: number }> => {
     // Mark this exercise as completed
-    const newCompleted = [...(completedMap[presetKey] || [])];
+    const newCompleted = [...(completedMap[pathKey] || [])];
     newCompleted[idx] = true;
-    setCompletedMap((prev) => ({ ...prev, [presetKey]: newCompleted }));
+    setCompletedMap((prev) => ({ ...prev, [pathKey]: newCompleted }));
 
     // Unlock only the next one
-    const newProgress = [...(progressMap[presetKey] || [])];
+    const newProgress = [...(progressMap[pathKey] || [])];
     if (idx + 1 < newProgress.length) newProgress[idx + 1] = true;
-    setProgressMap((prev) => ({ ...prev, [presetKey]: newProgress }));
+    setProgressMap((prev) => ({ ...prev, [pathKey]: newProgress }));
 
     // Increment total workouts
     incrementWorkouts();
@@ -463,12 +483,14 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   return (
     <ProgressContext.Provider
       value={{
-        progress: progressMap[presetKey],
-        completed: completedMap[presetKey],
+        progress: progressMap[pathKey],
+        completed: completedMap[pathKey],
         setProgress,
         setCompleted,
         presetKey,
         setPresetKey,
+        pathKey,
+        setPathKey,
         markExerciseComplete,
         acknowledgeRestDay,
         streak,

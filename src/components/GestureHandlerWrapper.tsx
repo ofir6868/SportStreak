@@ -84,14 +84,52 @@ export const createWebCompatibleGestureHandler = () => {
 
   // On native platforms, use the actual gesture handler
   try {
-    return require('react-native-gesture-handler');
+    const gestureHandler = require('react-native-gesture-handler');
+    return gestureHandler;
   } catch (error) {
-    console.warn('react-native-gesture-handler not available');
+    console.warn('react-native-gesture-handler not available, using web fallback');
     return createWebCompatibleGestureHandler();
   }
 };
 
-// Export gesture handler components
+// Export gesture handler components with proper error handling
+let gestureHandlerComponents: any;
+
+try {
+  gestureHandlerComponents = createWebCompatibleGestureHandler();
+} catch (error) {
+  console.warn('Failed to create gesture handler components:', error);
+  // Provide fallback components
+  gestureHandlerComponents = {
+    PanGestureHandler: ({ children }: any) => children,
+    TapGestureHandler: ({ children }: any) => children,
+    LongPressGestureHandler: ({ children }: any) => children,
+    PinchGestureHandler: ({ children }: any) => children,
+    RotationGestureHandler: ({ children }: any) => children,
+    FlingGestureHandler: ({ children }: any) => children,
+    ForceTouchGestureHandler: ({ children }: any) => children,
+    NativeViewGestureHandler: ({ children }: any) => children,
+    GestureDetector: ({ children }: any) => children,
+    Gesture: {
+      Pan: () => ({}),
+      Tap: () => ({}),
+      LongPress: () => ({}),
+      Pinch: () => ({}),
+      Rotation: () => ({}),
+      Fling: () => ({}),
+      ForceTouch: () => ({}),
+    },
+    State: {
+      UNDETERMINED: 0,
+      FAILED: 1,
+      BEGAN: 2,
+      CANCELLED: 3,
+      ACTIVE: 4,
+      END: 5
+    }
+  };
+}
+
 export const {
   PanGestureHandler,
   TapGestureHandler,
@@ -104,4 +142,4 @@ export const {
   GestureDetector,
   Gesture,
   State
-} = createWebCompatibleGestureHandler(); 
+} = gestureHandlerComponents; 

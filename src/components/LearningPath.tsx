@@ -1,12 +1,12 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFonts } from 'expo-font';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Dimensions, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { EXERCISE_PRESETS, PathCircle } from '../config/exercisePresets';
+import { EXERCISE_PRESETS, PathCircle as PathCircleType } from '../config/exercisePresets';
 import AppText from './AppText';
+import PathCircle from './PathCircle';
 import { useProgress } from './ProgressContext';
 
 // Use safe dimensions for iOS
@@ -19,48 +19,14 @@ const getSafeDimensions = () => {
 
 const { width } = getSafeDimensions();
 const PATH_WIDTH = width * 0.9;
-const BUBBLE_RADIUS = 44;
-const BUBBLE_DIAM = BUBBLE_RADIUS * 2;
-const BUBBLE_SPACING = 130;
-const NUM_BUBBLES = 6;
+const CIRCLE_RADIUS = 44;
+const CIRCLE_SPACING = 130;
+const NUM_CIRCLES = 6;
 const PATH_X_CENTER = PATH_WIDTH / 2;
 const CURVE_X_OFFSET = 60;
 const VERTICAL_GAP = 140;
 
-// Dedicated ExerciseIcon component with better iOS compatibility
-export const ExerciseIcon = ({ name, color = '#1CB0F6', size = 28 }: { name: string, color?: string, size?: number }) => {
-  // Add fallback for iOS icon mapping issues
-  const iconMap: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
-    'run': 'run',
-    'run-fast': 'run-fast',
-    'timer': 'timer',
-    'terrain': 'terrain',
-    'road-variant': 'road-variant',
-    'walk': 'walk',
-    'arm-flex': 'arm-flex',
-    'human-handsup': 'human-handsup',
-    'human': 'human',
-    'weight-lifter': 'weight-lifter',
-    'yoga': 'yoga',
-    'tree': 'tree',
-    'dog': 'dog',
-    'bridge': 'bridge',
-    'human-child': 'human-child',
-  };
-
-  const iconName = iconMap[name] || 'run';
-  
-  return (
-    <MaterialCommunityIcons 
-      name={iconName} 
-      size={size} 
-      color={color}
-      style={{ opacity: 1 }} // Ensure visibility on iOS
-    />
-  );
-};
-
-const getBubblePosition = (i: number, numBubbles: number) => {
+const getCirclePosition = (i: number, numCircles: number) => {
   // Spread bubbles vertically with more space
   const dir = i % 2 === 0 ? 1 : -1;
   const x = PATH_X_CENTER + (i === 0 ? 0 : dir * CURVE_X_OFFSET);
@@ -69,13 +35,13 @@ const getBubblePosition = (i: number, numBubbles: number) => {
   return { x, y };
 };
 
-const getPathD = (numBubbles: number, startIndex: number, endIndex: number) => {
-  if (numBubbles < 2 || startIndex >= endIndex) return '';
+const getPathD = (numCircles: number, startIndex: number, endIndex: number) => {
+  if (numCircles < 2 || startIndex >= endIndex) return '';
   
   // Get all bubble positions
   const positions = [];
-  for (let i = 0; i < numBubbles; i++) {
-    positions.push(getBubblePosition(i, numBubbles));
+  for (let i = 0; i < numCircles; i++) {
+    positions.push(getCirclePosition(i, numCircles));
   }
   
   // Create a mathematical sin-like curve that passes through circles from startIndex to endIndex
@@ -128,16 +94,13 @@ type Status = 'start' | 'review' | 'go' | 'locked';
 
 type RootStackParamList = {
   Home: undefined;
-  Exercise: { exercise: PathCircle; idx: number };
+  Exercise: { exercise: PathCircleType; idx: number };
 };
-
-const initialProgress = [false, false, false, false, false, false];
-const initialCompleted = [false, false, false, false, false, false];
 
 const LearningPath = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [fontsLoaded] = useFonts(fontMap);
-  const { progress, completed, presetKey, isDarkMode } = useProgress();
+  const { progress, completed, presetKey, pathKey, isDarkMode } = useProgress();
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [testMode, setTestMode] = useState(false);
@@ -150,7 +113,8 @@ const LearningPath = () => {
     console.log('LearningPath: Progress:', progress);
     console.log('LearningPath: Completed:', completed);
     console.log('LearningPath: Preset key:', presetKey);
-  }, [fontsLoaded, progress, completed, presetKey]);
+    console.log('LearningPath: Path key:', pathKey);
+  }, [fontsLoaded, progress, completed, presetKey, pathKey]);
 
   // Add error boundary and data loading check
   useEffect(() => {
@@ -158,14 +122,14 @@ const LearningPath = () => {
       try {
         console.log('LearningPath: Checking data...');
         // Ensure we have valid data
-        if (progress && completed && presetKey) {
+        if (progress && completed && presetKey && pathKey) {
           console.log('LearningPath: Data is valid, setting loaded to true');
           setIsDataLoaded(true);
         } else {
           console.log('LearningPath: Data not ready, waiting...');
           // Wait a bit for data to load
           setTimeout(() => {
-            if (progress && completed && presetKey) {
+            if (progress && completed && presetKey && pathKey) {
               console.log('LearningPath: Data loaded after delay');
               setIsDataLoaded(true);
             } else {
@@ -185,10 +149,12 @@ const LearningPath = () => {
     };
     
     checkData();
-  }, [progress, completed, presetKey]);
+  }, [progress, completed, presetKey, pathKey]);
 
-  // Get preset circles with fallback
-  const presetCircles = EXERCISE_PRESETS[presetKey]?.circles || EXERCISE_PRESETS['strength'].circles;
+  // Get path circles with fallback
+  const currentPreset = EXERCISE_PRESETS[presetKey];
+  const currentPath = currentPreset?.paths.find(path => path.key === pathKey);
+  const presetCircles = currentPath?.circles || EXERCISE_PRESETS['strength'].paths[0].circles;
 
   // Dark mode color scheme with excellent contrast
   const colors = {
@@ -197,55 +163,19 @@ const LearningPath = () => {
     pathStrokeGrayed: isDarkMode ? '#555555' : '#E5E5E5', // Grayed out path color
     pathStrokeWidth: 10,
     
-    // Bubble colors
-    bubbleBackground: isDarkMode ? '#2a2a2a' : '#fff',
-    bubbleBorderLocked: isDarkMode ? '#555555' : '#B0B0B0',
-    bubbleShadowLocked: isDarkMode ? '#000' : '#000',
-    
-    // Status colors
-    start: '#1CB0F6',
-    review: '#58CC02',
-    go: '#1CB0F6',
-    locked: isDarkMode ? '#555555' : '#E5E5E5',
-    
-    // Icon colors
-    iconBackground: isDarkMode ? '#1a1a1a' : '#F4F8FB',
-    iconLocked: isDarkMode ? '#888888' : '#B0B0B0',
-    iconActive: '#ffffff',
-    
-    // Text colors
-    titleLocked: isDarkMode ? '#888888' : '#B0B0B0',
-    titleActive: isDarkMode ? '#ffffff' : '#1CB0F6',
-    subtitleLocked: isDarkMode ? '#666666' : '#B0B0B0',
-    subtitleActive: isDarkMode ? '#cccccc' : '#888',
-    
-    // Status box colors
-    statusBoxLocked: isDarkMode ? '#555555' : '#B0B0B0',
-    statusText: '#ffffff',
-    
-    // Check mark
-    checkMark: '#58CC02',
-    
     // Container background
     containerBackground: isDarkMode ? '#1a1a1a' : '#fff',
   };
 
-  const statusText = {
-    start: 'Start',
-    review: 'Review',
-    go: 'Go',
-    locked: 'Locked',
-  };
-
   // Dynamically assign status based on progress/completed
-  const getBubbleStatus = (i: number): Status => {
+  const getCircleStatus = (i: number): Status => {
     if (i === 0) return completed[0] ? 'review' : 'start'; // First circle: review if completed, else start
     if (completed[i]) return 'review';
     if (progress[i]) return 'go';
     return 'locked';
   };
 
-  const handlePress = useCallback((status: Status, bubble: PathCircle, idx: number) => {
+  const handlePress = useCallback((status: Status, bubble: PathCircleType, idx: number) => {
     if (status === 'locked') return;
     navigation.navigate('Exercise', {
       exercise: bubble,
@@ -253,15 +183,15 @@ const LearningPath = () => {
     });
   }, [navigation]);
 
-  const numBubbles = presetCircles.length;
-  const pathHeight = VERTICAL_GAP * (numBubbles - 1) + 200;
+  const numCircles = presetCircles.length;
+  const pathHeight = VERTICAL_GAP * (numCircles - 1) + 200;
   // Calculate last bubble's y position
-  const lastBubbleY = VERTICAL_GAP * (numBubbles - 1) + 80;
-  const minContainerHeight = lastBubbleY + BUBBLE_RADIUS + 40;
+  const lastCircleY = VERTICAL_GAP * (numCircles - 1) + 80;
+  const minContainerHeight = lastCircleY + CIRCLE_RADIUS + 40;
 
   // Find the maximum reached circle index
   const getMaxReachedIndex = () => {
-    for (let i = numBubbles - 1; i >= 0; i--) {
+    for (let i = numCircles - 1; i >= 0; i--) {
       if (completed[i] || progress[i]) {
         return i;
       }
@@ -277,7 +207,7 @@ const LearningPath = () => {
       <View style={[styles.outerContainer, { backgroundColor: colors.containerBackground }]}>
         <View style={styles.centeredContainer}>
           <View style={[styles.innerContainer, { minHeight: minContainerHeight }]}>
-            <AppText style={[styles.loadingText, { color: colors.titleActive }]}>
+            <AppText style={[styles.loadingText, { color: '#1CB0F6' }]}>
               Loading learning path...
             </AppText>
           </View>
@@ -322,19 +252,22 @@ const LearningPath = () => {
       <View style={[styles.outerContainer, { backgroundColor: colors.containerBackground }]}>
         <View style={styles.centeredContainer}>
           <View style={[styles.innerContainer, { minHeight: 400 }]}>
-            <AppText style={[styles.testTitle, { color: colors.titleActive }]}>
+            <AppText style={[styles.testTitle, { color: '#1CB0F6' }]}>
               Learning Path Test Mode
             </AppText>
-            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+            <AppText style={[styles.testText, { color: '#888' }]}>
               Platform: {Platform.OS}
             </AppText>
-            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+            <AppText style={[styles.testText, { color: '#888' }]}>
               Fonts Loaded: {fontsLoaded ? 'Yes' : 'No'}
             </AppText>
-            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+            <AppText style={[styles.testText, { color: '#888' }]}>
               Preset: {presetKey}
             </AppText>
-            <AppText style={[styles.testText, { color: colors.subtitleActive }]}>
+            <AppText style={[styles.testText, { color: '#888' }]}>
+              Path: {pathKey}
+            </AppText>
+            <AppText style={[styles.testText, { color: '#888' }]}>
               Circles: {presetCircles?.length || 0}
             </AppText>
             <TouchableOpacity 
@@ -363,7 +296,7 @@ const LearningPath = () => {
               {/* Render reached path segment */}
               {maxReachedIndex >= 0 && (
                 <Path
-                  d={getPathD(numBubbles, 0, maxReachedIndex)}
+                  d={getPathD(numCircles, 0, maxReachedIndex)}
                   stroke={colors.pathStroke}
                   strokeWidth={colors.pathStrokeWidth}
                   fill="none"
@@ -371,9 +304,9 @@ const LearningPath = () => {
                 />
               )}
               {/* Render unreached path segment */}
-              {maxReachedIndex < numBubbles - 1 && (
+              {maxReachedIndex < numCircles - 1 && (
                 <Path
-                  d={getPathD(numBubbles, Math.max(0, maxReachedIndex), numBubbles - 1)}
+                  d={getPathD(numCircles, Math.max(0, maxReachedIndex), numCircles - 1)}
                   stroke={colors.pathStrokeGrayed}
                   strokeWidth={colors.pathStrokeWidth}
                   fill="none"
@@ -382,96 +315,37 @@ const LearningPath = () => {
               )}
             </Svg>
           </View>
-          {presetCircles.map((bubble, i) => {
-            const { x, y } = getBubblePosition(i, numBubbles);
-            const status = getBubbleStatus(i);
-            const isLocked = status === 'locked';
-            const statusColor = colors[status];
+          
+          {/* Render PathCircles */}
+          {presetCircles.map((circleConfig, i) => {
+            const { x, y } = getCirclePosition(i, numCircles);
+            const status = getCircleStatus(i);
             
             return (
-              <TouchableOpacity
-                key={bubble.id}
+              <View
+                key={circleConfig.id}
                 style={[
-                  styles.bubble,
+                  styles.bubbleContainer,
                   {
-                    left: x - BUBBLE_RADIUS,
-                    top: y - BUBBLE_RADIUS,
-                    backgroundColor: colors.bubbleBackground,
-                    borderColor: isLocked ? colors.bubbleBorderLocked : statusColor,
-                    borderWidth: 4,
-                    shadowColor: isLocked ? colors.bubbleShadowLocked : statusColor,
-                    shadowOpacity: !isLocked ? 0.2 : 0.05,
-                    shadowRadius: 12,
-                    elevation: Platform.OS === 'android' ? 4 : 0, // iOS doesn't use elevation
-                    opacity: 1,
+                    left: x - CIRCLE_RADIUS,
+                    top: y - CIRCLE_RADIUS,
                   },
                 ]}
-                onPress={() => handlePress(status, bubble, i)}
-                disabled={isLocked}
-                activeOpacity={!isLocked ? 0.7 : 1}
               >
-                <View style={[styles.iconCircle, { backgroundColor: isLocked ? colors.iconBackground : statusColor }]}> 
-                  <ExerciseIcon 
-                    name={bubble.icon} 
-                    size={28} 
-                    color={isLocked ? colors.iconLocked : colors.iconActive} 
-                  />
-                </View>
-                <AppText
-                  style={[
-                    styles.title,
-                    {
-                      color: isLocked ? colors.titleLocked : colors.titleActive,
-                      fontFamily: fontsLoaded ? 'Nunito' : Platform.OS === 'ios' ? 'System' : undefined,
-                    },
-                  ]}
-                >
-                  {bubble.title}
-                </AppText>
-                <AppText
-                  style={[
-                    styles.subtitle,
-                    {
-                      fontFamily: fontsLoaded ? 'Nunito-Regular' : Platform.OS === 'ios' ? 'System' : undefined,
-                      color: isLocked ? colors.subtitleLocked : colors.subtitleActive,
-                    },
-                  ]}
-                >
-                  {bubble.subtitle}
-                </AppText>
-                <View
-                  style={[
-                    styles.statusBox,
-                    {
-                      backgroundColor: isLocked ? colors.statusBoxLocked : statusColor,
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      styles.statusText,
-                      {
-                        fontFamily: fontsLoaded ? 'Nunito-SemiBold' : Platform.OS === 'ios' ? 'System' : undefined,
-                        color: colors.statusText,
-                      },
-                    ]}
-                  >
-                    {statusText[status]}
-                  </AppText>
-                </View>
-                {completed[i] && (
-                  <MaterialCommunityIcons
-                    name="check-bold"
-                    size={20}
-                    color={colors.checkMark}
-                    style={{ position: 'absolute', top: -8, right: -8, zIndex: 10 }}
-                  />
-                )}
-              </TouchableOpacity>
+                <PathCircle
+                  circleConfig={circleConfig}
+                  index={i}
+                  status={status}
+                  isCompleted={completed[i]}
+                  onPress={handlePress}
+                  isDarkMode={isDarkMode}
+                />
+              </View>
             );
           })}
+          
           <Image 
-            source={require('../../assets/mascot.png')} 
+            source={isDarkMode ? require('../../assets/transparent_mascot.png') : require('../../assets/mascot.png')} 
             style={styles.mascot} 
             resizeMode="contain"
             // Add onError handler for iOS image loading issues
@@ -504,7 +378,7 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     width: PATH_WIDTH,
-    minHeight: BUBBLE_SPACING * (NUM_BUBBLES - 1) + 240,
+    minHeight: CIRCLE_SPACING * (NUM_CIRCLES - 1) + 240,
     alignItems: 'center',
     justifyContent: 'flex-start',
     position: 'relative',
@@ -512,7 +386,7 @@ const styles = StyleSheet.create({
   },
   svgContainer: {
     width: PATH_WIDTH,
-    height: VERTICAL_GAP * (NUM_BUBBLES - 1) + 200,
+    height: VERTICAL_GAP * (NUM_CIRCLES - 1) + 200,
     position: 'absolute',
     left: 0,
     top: 0,
@@ -524,53 +398,9 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 1,
   },
-  bubble: {
+  bubbleContainer: {
     position: 'absolute',
-    width: BUBBLE_DIAM,
-    height: BUBBLE_DIAM,
-    borderRadius: BUBBLE_RADIUS,
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
-    padding: 0,
-  },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 1,
-  },
-  title: {
-    fontSize: 15,
-    fontFamily: 'Nunito-Bold',
-    textAlign: "center"
-  },
-  subtitle: {
-    fontSize: 11,
-    marginBottom: 2,
-  },
-  statusBox: {
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    marginTop: 6,
-    alignSelf: 'center',
-    shadowColor: '#1CB0F6',
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statusText: {
-    fontFamily: 'Nunito-Bold',
-    fontSize: 13,
-    textTransform: 'capitalize',
-    textAlign: 'center',
   },
   loadingText: {
     fontSize: 16,
@@ -604,15 +434,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 10,
-  },
-  debugText: {
-    fontSize: 12,
-    textAlign: 'center',
-    position: 'absolute',
-    top: 10,
-    left: 0,
-    right: 0,
-    zIndex: 100,
   },
 });
 

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Alert } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ExerciseIcon } from '../components/LearningPath';
+import ExerciseIcon from '../components/ExerciseIcon';
 import { useProgress } from '../components/ProgressContext';
 import AppText from '../components/AppText';
 import { CameraMode, DetailsMode } from '../components/exercise-modes';

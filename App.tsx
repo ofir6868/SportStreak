@@ -12,8 +12,11 @@ import * as Font from 'expo-font';
 import React from 'react';
 import { Platform, SafeAreaView, View, StyleSheet, LogBox } from 'react-native';
 
-// Suppress the specific warning about text strings
-LogBox.ignoreLogs(['Text strings must be rendered within a <Text> component.']);
+// Suppress the specific warning about text strings and gesture handler events
+LogBox.ignoreLogs([
+  'Text strings must be rendered within a <Text> component.',
+  'topGestureHandlerEvent',
+]);
 import { ProgressProvider, useProgress } from './src/components/ProgressContext';
 import { getTheme } from './src/config/theme';
 import ExerciseScreen from './src/screens/ExerciseScreen';
@@ -35,6 +38,21 @@ import ShopScreen from './src/screens/ShopScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import QuestToast from './src/components/QuestToast';
 import { GestureHandlerWrapper } from './src/components/GestureHandlerWrapper';
+
+// Ensure gesture handler is properly initialized
+import 'react-native-gesture-handler';
+import './src/polyfills/gestureHandlerPolyfill';
+
+// Suppress gesture handler warnings in development
+if (__DEV__) {
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('topGestureHandlerEvent')) {
+      return; // Suppress the specific warning
+    }
+    originalConsoleWarn.apply(console, args);
+  };
+}
 
 const isWeb = Platform.OS === 'web';
 const customFonts = {

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import TopStatusBar from '../components/TopStatusBar';
+import PathsSlider from '../components/PathsSlider';
 import LearningPath from '../components/LearningPath';
 import BottomNavBar from '../components/BottomNavBar';
+import SchedulePanel from '../components/SchedulePanel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import AppText from '../components/AppText';
@@ -15,6 +17,7 @@ const HomeScreen = ({ navigation }: any) => {
     isDarkMode
   } = useProgress();
   const [isLearningPathVisible, setIsLearningPathVisible] = useState(true);
+  const [schedulePanelVisible, setSchedulePanelVisible] = useState(false);
   
   useEffect(() => {
     console.log('HomeScreen: Component mounted');
@@ -64,8 +67,12 @@ const HomeScreen = ({ navigation }: any) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
-        <TopStatusBar />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', padding: 8, position:'absolute', right:0, top: 92   }}>
+        <TopStatusBar 
+          onSchedulePress={() => setSchedulePanelVisible(true)}
+          schedulePanelVisible={schedulePanelVisible}
+        />
+        <PathsSlider />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', padding: 8, position:'absolute', right:0, top: 630   }}>
           <TouchableOpacity style={styles.restartButton} onPress={handleRestart}>
             <AppText style={styles.restartText}>Restart</AppText>
           </TouchableOpacity>
@@ -97,6 +104,12 @@ const HomeScreen = ({ navigation }: any) => {
       <View style={[styles.stickyFooter, { backgroundColor: colors.background }]}>
         <BottomNavBar />
       </View>
+      
+      {/* Schedule Panel */}
+      <SchedulePanel 
+        isVisible={schedulePanelVisible}
+        onClose={() => setSchedulePanelVisible(false)}
+      />
     </View>
   );
 };
