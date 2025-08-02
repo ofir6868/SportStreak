@@ -10,7 +10,10 @@ import { useProgress } from '../components/ProgressContext';
 
 
 const HomeScreen = ({ navigation }: any) => {
-  const { forceResetQuests, isDarkMode } = useProgress();
+  const { 
+    forceResetQuests, 
+    isDarkMode
+  } = useProgress();
   const [isLearningPathVisible, setIsLearningPathVisible] = useState(true);
   
   useEffect(() => {

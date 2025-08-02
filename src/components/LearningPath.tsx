@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Image, Platform } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { useFonts } from 'expo-font';
-import { FontAwesome, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useProgress } from './ProgressContext';
-import { EXERCISE_PRESETS, ExercisePresetKey, PathCircle } from '../config/exercisePresets';
+import { useFonts } from 'expo-font';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Dimensions, Image, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { EXERCISE_PRESETS, PathCircle } from '../config/exercisePresets';
 import AppText from './AppText';
+import { useProgress } from './ProgressContext';
 
 // Use safe dimensions for iOS
 const getSafeDimensions = () => {
@@ -70,8 +69,8 @@ const getBubblePosition = (i: number, numBubbles: number) => {
   return { x, y };
 };
 
-const getPathD = (numBubbles: number) => {
-  if (numBubbles < 2) return '';
+const getPathD = (numBubbles: number, startIndex: number, endIndex: number) => {
+  if (numBubbles < 2 || startIndex >= endIndex) return '';
   
   // Get all bubble positions
   const positions = [];
@@ -79,12 +78,11 @@ const getPathD = (numBubbles: number) => {
     positions.push(getBubblePosition(i, numBubbles));
   }
   
-  // Create a mathematical sin-like curve that passes through all circles
-  // This creates a truly continuous smooth path with proper sin-like curvature
-  let d = `M${positions[0].x},${positions[0].y}`;
+  // Create a mathematical sin-like curve that passes through circles from startIndex to endIndex
+  let d = `M${positions[startIndex].x},${positions[startIndex].y}`;
   
   // For each segment between circles, create a smooth curve
-  for (let i = 0; i < numBubbles - 1; i++) {
+  for (let i = startIndex; i < endIndex; i++) {
     const current = positions[i];
     const next = positions[i + 1];
     
@@ -195,7 +193,8 @@ const LearningPath = () => {
   // Dark mode color scheme with excellent contrast
   const colors = {
     // Path colors
-    pathStroke: '#FFA800', // Keep green for path
+    pathStroke: '#FFA800', // Active path color
+    pathStrokeGrayed: isDarkMode ? '#555555' : '#E5E5E5', // Grayed out path color
     pathStrokeWidth: 10,
     
     // Bubble colors
@@ -259,6 +258,18 @@ const LearningPath = () => {
   // Calculate last bubble's y position
   const lastBubbleY = VERTICAL_GAP * (numBubbles - 1) + 80;
   const minContainerHeight = lastBubbleY + BUBBLE_RADIUS + 40;
+
+  // Find the maximum reached circle index
+  const getMaxReachedIndex = () => {
+    for (let i = numBubbles - 1; i >= 0; i--) {
+      if (completed[i] || progress[i]) {
+        return i;
+      }
+    }
+    return -1; // No circles reached yet
+  };
+
+  const maxReachedIndex = getMaxReachedIndex();
 
   // Show loading state
   if (!isDataLoaded) {
@@ -349,13 +360,26 @@ const LearningPath = () => {
           {/* Add fallback for SVG rendering issues on iOS */}
           <View style={styles.svgContainer}>
             <Svg width={PATH_WIDTH} height={pathHeight} style={styles.svg}>
-              <Path
-                d={getPathD(numBubbles)}
-                stroke={colors.pathStroke}
-                strokeWidth={colors.pathStrokeWidth}
-                fill="none"
-                strokeLinecap="round"
-              />
+              {/* Render reached path segment */}
+              {maxReachedIndex >= 0 && (
+                <Path
+                  d={getPathD(numBubbles, 0, maxReachedIndex)}
+                  stroke={colors.pathStroke}
+                  strokeWidth={colors.pathStrokeWidth}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              )}
+              {/* Render unreached path segment */}
+              {maxReachedIndex < numBubbles - 1 && (
+                <Path
+                  d={getPathD(numBubbles, Math.max(0, maxReachedIndex), numBubbles - 1)}
+                  stroke={colors.pathStrokeGrayed}
+                  strokeWidth={colors.pathStrokeWidth}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              )}
             </Svg>
           </View>
           {presetCircles.map((bubble, i) => {

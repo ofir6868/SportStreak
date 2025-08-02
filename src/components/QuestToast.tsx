@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AppText from './AppText';
+import { useProgress } from './ProgressContext';
+import { getTheme } from '../config/theme';
 
 interface QuestToastProps {
   visible: boolean;
@@ -11,6 +13,8 @@ interface QuestToastProps {
 }
 
 const QuestToast: React.FC<QuestToastProps> = ({ visible, questTitle, reward, onHide }) => {
+  const { isDarkMode } = useProgress();
+  const theme = getTheme(isDarkMode);
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -64,15 +68,15 @@ const QuestToast: React.FC<QuestToastProps> = ({ visible, questTitle, reward, on
         },
       ]}
     >
-      <View style={styles.content}>
+      <View style={[styles.content, { backgroundColor: theme.cardBackground }]}>
         <MaterialCommunityIcons name="trophy" size={24} color="#FFD700" />
         <View style={styles.textContainer}>
-          <AppText style={styles.title}>Quest Completed!</AppText>
-          <AppText style={styles.questTitle}>{questTitle}</AppText>
+          <AppText style={[styles.title, { color: theme.text }]}>Quest Completed!</AppText>
+          <AppText style={[styles.questTitle, { color: theme.textSecondary }]}>{questTitle}</AppText>
         </View>
-        <View style={styles.rewardContainer}>
+        <View style={[styles.rewardContainer, { backgroundColor: theme.border }]}>
           <MaterialCommunityIcons name="diamond" size={20} color="#1CB0F6" />
-          <AppText style={styles.rewardText}>+{reward}</AppText>
+          <AppText style={[styles.rewardText, { color: theme.text }]}>+{reward}</AppText>
         </View>
       </View>
     </Animated.View>
@@ -88,7 +92,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   content: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -107,17 +110,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontFamily: 'Nunito-Bold',
-    color: '#333',
   },
   questTitle: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   rewardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E6F0FA',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
   rewardText: {
     fontSize: 14,
     fontFamily: 'Nunito-Bold',
-    color: '#1CB0F6',
     marginLeft: 4,
   },
 });

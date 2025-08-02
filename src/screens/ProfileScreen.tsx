@@ -8,7 +8,7 @@ import BottomNavBar from '../components/BottomNavBar';
 type AvatarIcon = 'account-circle';
 
 const ProfileScreen = () => {
-  const { nickname, streak, totalWorkouts, diamonds, isDarkMode, toggleDarkMode } = useProgress();
+  const { nickname, streak, totalWorkouts, diamonds, isDarkMode, toggleDarkMode, exerciseMode, setExerciseMode } = useProgress();
   const [sound, setSound] = useState(true);
   const [notifications, setNotifications] = useState(true);
 
@@ -69,6 +69,47 @@ const ProfileScreen = () => {
               trackColor={{ true: colors.primary, false: isDarkMode ? '#555' : '#ccc' }} 
               thumbColor={isDarkMode ? '#fff' : isDarkMode ? '#888' : '#eee'} 
             />
+          </View>
+          <View style={styles.prefRow}>
+            <AppText style={[styles.prefLabel, { color: colors.text }]}>Exercise mode</AppText>
+            <View style={styles.modeSelector}>
+              <TouchableOpacity 
+                style={[
+                  styles.modeButton, 
+                  { 
+                    backgroundColor: exerciseMode === 'camera' ? colors.primary : 'transparent',
+                    borderColor: colors.primary,
+                    borderWidth: 1
+                  }
+                ]}
+                onPress={() => setExerciseMode('camera')}
+              >
+                <AppText style={[
+                  styles.modeButtonText, 
+                  { color: exerciseMode === 'camera' ? '#fff' : colors.primary }
+                ]}>
+                  Camera
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.modeButton, 
+                  { 
+                    backgroundColor: exerciseMode === 'details' ? colors.primary : 'transparent',
+                    borderColor: colors.primary,
+                    borderWidth: 1
+                  }
+                ]}
+                onPress={() => setExerciseMode('details')}
+              >
+                <AppText style={[
+                  styles.modeButtonText, 
+                  { color: exerciseMode === 'details' ? '#fff' : colors.primary }
+                ]}>
+                  Details
+                </AppText>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
         <TouchableOpacity style={[styles.editBtn, { backgroundColor: colors.primary }]}>
@@ -166,6 +207,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Nunito-Bold',
     fontSize: 16,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontFamily: 'Nunito-Bold',
   },
 });
 

@@ -27,8 +27,10 @@ const ProgressContext = createContext({
   presetKey: 'strength' as ExercisePresetKey,
   setPresetKey: (key: ExercisePresetKey) => {},
   markExerciseComplete: async (idx: number, additionalParams?: QuestTrackingParams) => ({ streaked: false, newStreak: 0 }),
+  acknowledgeRestDay: async () => ({ streaked: false, newStreak: 0 }),
   streak: 0,
   streakUpdatedToday: false,
+  setStreakUpdatedToday: (updated: boolean) => {},
   nickname: '',
   setNickname: (name: string) => {},
   diamonds: 500,
@@ -47,10 +49,18 @@ const ProgressContext = createContext({
   hideQuestToast: () => {},
   isDarkMode: false,
   toggleDarkMode: () => {},
+  exerciseMode: 'details' as 'camera' | 'details',
+  setExerciseMode: (mode: 'camera' | 'details') => {},
+  // Schedule state
+  workoutDaysPerWeek: 3,
+  setWorkoutDaysPerWeek: (days: number) => {},
+  selectedWorkoutDays: [] as number[],
+  setSelectedWorkoutDays: (days: number[]) => {},
   // Workout session state
   workoutSessionState: null as any,
   setWorkoutSessionState: (state: any) => {},
   completeWorkoutSet: (exerciseIndex: number, duration: number) => {},
+  isDataLoaded: false,
 });
 
 export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -68,7 +78,11 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [lastQuestReset, setLastQuestReset] = useState('');
   const [completedQuestToast, setCompletedQuestToast] = useState({ visible: false, title: '', reward: 0 });
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [exerciseMode, setExerciseModeState] = useState<'camera' | 'details'>('details');
+  const [workoutDaysPerWeek, setWorkoutDaysPerWeekState] = useState(3);
+  const [selectedWorkoutDays, setSelectedWorkoutDaysState] = useState<number[]>([]);
   const [workoutSessionState, setWorkoutSessionState] = useState(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
     // Load data from AsyncStorage
@@ -76,7 +90,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       try {
         console.log('ProgressContext: Starting data load...');
         
-        const [name, preset, diamondsData, lastReset, dailyQuestsData, weeklyQuestsData, darkModeData, totalWorkoutsData] = await Promise.all([
+        const [name, preset, diamondsData, lastReset, dailyQuestsData, weeklyQuestsData, darkModeData, totalWorkoutsData, exerciseModeData, workoutDaysData, selectedDaysData] = await Promise.all([
           AsyncStorage.getItem('nickname'),
           AsyncStorage.getItem('selectedPreset'),
           AsyncStorage.getItem('diamonds'),
@@ -84,7 +98,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           AsyncStorage.getItem('dailyQuests'),
           AsyncStorage.getItem('weeklyQuests'),
           AsyncStorage.getItem('isDarkMode'),
-          AsyncStorage.getItem('totalWorkouts')
+          AsyncStorage.getItem('totalWorkouts'),
+          AsyncStorage.getItem('exerciseMode'),
+          AsyncStorage.getItem('workoutDaysPerWeek'),
+          AsyncStorage.getItem('selectedWorkoutDays')
         ]);
 
         console.log('ProgressContext: Data loaded from AsyncStorage:', {
@@ -106,11 +123,15 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (totalWorkoutsData) setTotalWorkouts(parseInt(totalWorkoutsData));
         if (lastReset) setLastQuestReset(lastReset);
         if (darkModeData) setIsDarkMode(JSON.parse(darkModeData));
+        if (exerciseModeData && ['camera', 'details'].includes(exerciseModeData)) {
+          setExerciseModeState(exerciseModeData as 'camera' | 'details');
+        }
+        if (workoutDaysData) setWorkoutDaysPerWeekState(parseInt(workoutDaysData));
+        if (selectedDaysData) setSelectedWorkoutDaysState(JSON.parse(selectedDaysData));
         
         // Initialize quests if they don't exist or if it's a new day
         const today = new Date().toISOString().slice(0, 10);
         if (!dailyQuestsData || !weeklyQuestsData || lastReset !== today) {
-          console.log('ProgressContext: Generating new quests...');
           const newDailyQuests = generateDailyQuests();
           const newWeeklyQuests = generateWeeklyQuests();
           setDailyQuests(newDailyQuests);
@@ -144,9 +165,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
         
-        console.log('ProgressContext: Data load completed successfully');
+        // Mark data as loaded
+        setIsDataLoaded(true);
+        
       } catch (error) {
-        console.error('ProgressContext: Error loading data:', error);
         // Set default values on error
         setPresetKeyState('strength');
         setDiamonds(500);
@@ -159,6 +181,9 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const newWeeklyQuests = generateWeeklyQuests();
         setDailyQuests(newDailyQuests);
         setWeeklyQuests(newWeeklyQuests);
+        
+        // Mark data as loaded even on error
+        setIsDataLoaded(true);
       }
     };
     
@@ -347,10 +372,47 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     AsyncStorage.setItem('isDarkMode', JSON.stringify(!isDarkMode));
   };
 
+  const setExerciseMode = (mode: 'camera' | 'details') => {
+    setExerciseModeState(mode);
+    AsyncStorage.setItem('exerciseMode', mode);
+  };
+
+  const setWorkoutDaysPerWeek = (days: number) => {
+    setWorkoutDaysPerWeekState(days);
+    AsyncStorage.setItem('workoutDaysPerWeek', days.toString());
+  };
+
+  const setSelectedWorkoutDays = (days: number[]) => {
+    setSelectedWorkoutDaysState(days);
+    AsyncStorage.setItem('selectedWorkoutDays', JSON.stringify(days));
+  };
+
   const completeWorkoutSet = (exerciseIndex: number, duration: number) => {
     if (workoutSessionState) {
       workoutSessionState.completeSet(exerciseIndex, duration);
     }
+  };
+
+  const acknowledgeRestDay = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (lastCompletedDate !== today) {
+      // If last completed was yesterday, increment streak, else reset to 1
+      let newStreak = 1;
+      if (lastCompletedDate) {
+        const last = new Date(lastCompletedDate);
+        const diff = (new Date(today).getTime() - last.getTime()) / (1000 * 60 * 60 * 24);
+        if (diff === 1) newStreak = streak + 1;
+      }
+      setStreak(newStreak);
+      setLastCompletedDate(today);
+      setStreakUpdatedToday(true);
+      
+      // Update streak quest progress
+      updateQuestProgressWithParams({ streakDays: 1 });
+      
+      return { streaked: true, newStreak };
+    }
+    return { streaked: false, newStreak: streak };
   };
 
 
@@ -408,8 +470,10 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         presetKey,
         setPresetKey,
         markExerciseComplete,
+        acknowledgeRestDay,
         streak,
         streakUpdatedToday,
+        setStreakUpdatedToday,
         nickname,
         setNickname,
         diamonds,
@@ -428,9 +492,16 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         hideQuestToast,
         isDarkMode,
         toggleDarkMode,
+        exerciseMode,
+        setExerciseMode,
+        workoutDaysPerWeek,
+        setWorkoutDaysPerWeek,
+        selectedWorkoutDays,
+        setSelectedWorkoutDays,
         workoutSessionState,
         setWorkoutSessionState,
         completeWorkoutSet,
+        isDataLoaded,
       }}
     >
       {children}

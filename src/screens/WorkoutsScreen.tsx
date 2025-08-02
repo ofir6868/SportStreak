@@ -5,10 +5,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
 import { useNavigation } from '@react-navigation/native';
 import { WORKOUT_CONFIGS } from '../config/workoutConfig';
+import { useProgress } from '../components/ProgressContext';
+import { getTheme } from '../config/theme';
 
 const filters = ['All', 'Strength', 'Cardio', 'Yoga'];
 
 const WorkoutsScreen = () => {
+  const { isDarkMode } = useProgress();
+  const theme = getTheme(isDarkMode);
   const [selected, setSelected] = useState('All');
   const navigation = useNavigation<any>();
   
@@ -17,29 +21,41 @@ const WorkoutsScreen = () => {
   };
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <AppText style={styles.headerTitle}>Workouts</AppText>
-        <AppText style={styles.headerSubtitle}>Choose your workout and start training!</AppText>
+        <AppText style={[styles.headerTitle, { color: theme.primary }]}>Workouts</AppText>
+        <AppText style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Choose your workout and start training!</AppText>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterBar} contentContainerStyle={{ paddingHorizontal: 12 }}>
         {filters.map(f => (
-          <TouchableOpacity key={f} style={[styles.filterBtn, selected === f && styles.filterBtnActive]} onPress={() => setSelected(f)}>
-            <AppText style={[styles.filterText, selected === f && styles.filterTextActive]}>{f}</AppText>
+          <TouchableOpacity 
+            key={f} 
+            style={[
+              styles.filterBtn, 
+              { backgroundColor: theme.cardBackground, borderColor: theme.border },
+              selected === f && styles.filterBtnActive
+            ]} 
+            onPress={() => setSelected(f)}
+          >
+            <AppText style={[
+              styles.filterText, 
+              { color: theme.primary },
+              selected === f && styles.filterTextActive
+            ]}>{f}</AppText>
           </TouchableOpacity>
         ))}
       </ScrollView>
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.grid}>
           {WORKOUT_CONFIGS.filter(w => selected === 'All' || w.type === selected).map(w => (
-            <View key={w.id} style={styles.card}>
+            <View key={w.id} style={[styles.card, { backgroundColor: theme.cardBackground }]}>
               <View style={styles.iconCircle}>
                 <MaterialCommunityIcons name={w.icon} size={32} color="#1CB0F6" />
               </View>
-              <AppText style={styles.workoutName}>{w.name}</AppText>
-              <AppText style={styles.difficulty}>{w.difficulty}</AppText>
+              <AppText style={[styles.workoutName, { color: theme.text }]}>{w.name}</AppText>
+              <AppText style={[styles.difficulty, { color: theme.textSecondary }]}>{w.difficulty}</AppText>
               <TouchableOpacity 
-                style={styles.startBtn}
+                style={[styles.startBtn, { backgroundColor: theme.primary }]}
                 onPress={() => handleStartWorkout(w.id)}
               >
                 <AppText style={styles.startBtnText}>Start</AppText>
@@ -65,12 +81,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontFamily: 'Nunito-Bold',
-    color: '#1CB0F6',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#888',
     fontFamily: 'Nunito-Regular',
   },
   filterBar: {
@@ -81,20 +95,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   filterBtn: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 8,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#E6F0FA',
   },
   filterBtnActive: {
     backgroundColor: '#1CB0F6',
     borderColor: '#1CB0F6',
   },
   filterText: {
-    color: '#1CB0F6',
     fontFamily: 'Nunito-Regular',
     fontSize: 15,
   },
@@ -109,7 +120,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     alignItems: 'center',
     width: 160,
@@ -132,17 +142,14 @@ const styles = StyleSheet.create({
   workoutName: {
     fontSize: 16,
     fontFamily: 'Nunito-Bold',
-    color: '#222',
     marginBottom: 4,
     textAlign: 'center',
   },
   difficulty: {
-    color: '#888',
     fontSize: 14,
     marginBottom: 10,
   },
   startBtn: {
-    backgroundColor: '#FFA800',
     borderRadius: 12,
     paddingHorizontal: 24,
     paddingVertical: 8,

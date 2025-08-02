@@ -1,34 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView, Animated, Alert } from 'react-native';
-import { Camera, CameraView } from 'expo-camera';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ExerciseIcon } from '../components/LearningPath';
 import { useProgress } from '../components/ProgressContext';
 import AppText from '../components/AppText';
+import { CameraMode, DetailsMode } from '../components/exercise-modes';
 
-const steps = ['explanation', 'privacy', 'camera'] as const;
+const steps = ['explanation', 'camera'] as const;
 type Step = typeof steps[number];
 
 const ExerciseScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { exercise, idx, workoutId, exerciseIndex, setNumber, totalSets } = route.params;
+  const { exercise, idx, workoutId, exerciseIndex, setNumber, totalSets, onExerciseComplete } = route.params;
   const [step, setStep] = useState<Step>('explanation');
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const cameraRef = useRef(null);
-  const { markExerciseComplete, streak, streakUpdatedToday, updateQuestProgressWithParams, isDarkMode, completeWorkoutSet } = useProgress();
-  const [recordingState, setRecordingState] = useState<'idle' | 'countdown' | 'recording'>('idle');
+
+  const { markExerciseComplete, streak, streakUpdatedToday, updateQuestProgressWithParams, isDarkMode, completeWorkoutSet, exerciseMode } = useProgress();
+  const [recordingState, setRecordingState] = useState<'idle' | 'countdown' | 'recording' | 'paused' | 'rest'>('idle');
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState<number | null>(null);
   const [showDone, setShowDone] = useState(false);
   const [blinkAnim] = useState(new Animated.Value(1));
+  const [currentSet, setCurrentSet] = useState(1);
+  const [getReadyTimer, setGetReadyTimer] = useState<number | null>(null);
+  const [pausedTimer, setPausedTimer] = useState<number | null>(null);
+  const [restTimer, setRestTimer] = useState<number | null>(null);
   const duration = exercise.duration || 30;
+  const totalExerciseSets = exercise.sets || 1;
+  const getReadyDuration = 10; // 10 seconds for get ready
 
   // Dark mode colors
   const colors = {
     background: isDarkMode ? '#1a1a1a' : '#fff',
-    text: isDarkMode ? '#ffffff' : '#444',
+    text: isDarkMode ? '#CCCCCC' : '#444',
     textSecondary: isDarkMode ? '#cccccc' : '#666',
     primary: '#1CB0F6',
     accent: '#FFA800',
@@ -37,15 +42,7 @@ const ExerciseScreen = () => {
     border: isDarkMode ? '#404040' : '#e0e0e0',
   };
 
-  // Request camera permission on camera step
-  React.useEffect(() => {
-    if (step === 'camera' && hasPermission === null) {
-      (async () => {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        setHasPermission(status === 'granted');
-      })();
-    }
-  }, [step, hasPermission]);
+
 
   // Blinking dot animation
   React.useEffect(() => {
@@ -61,26 +58,42 @@ const ExerciseScreen = () => {
     }
   }, [recordingState]);
 
-  // Countdown logic
+  // Get ready and countdown logic (integrated into 10 seconds)
   React.useEffect(() => {
-    let countdownInterval: any;
+    let getReadyInterval: any;
+    
     if (recordingState === 'countdown') {
+      // Start with get ready phase (10 seconds total)
+      setGetReadyTimer(getReadyDuration);
       setCountdown(3);
-      countdownInterval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev === 1) {
-            clearInterval(countdownInterval);
+      
+      getReadyInterval = setInterval(() => {
+        setGetReadyTimer((prev) => {
+          if (prev && prev > 1) {
+            // When we reach 3 seconds remaining, start countdown
+            const current = prev - 1;
+            if (current <= 3) {
+              setCountdown(current);
+            }
+            return current;
+          } else if (prev === 1) {
+            // Get ready phase complete, start recording
+            clearInterval(getReadyInterval);
             setRecordingState('recording');
             setTimer(duration);
             setShowDone(true);
-            return 3;
+            setGetReadyTimer(null);
+            return 0;
           }
-          return prev - 1;
+          return prev;
         });
-      }, 800);
+      }, 1000);
     }
-    return () => clearInterval(countdownInterval);
-  }, [recordingState, duration]);
+    
+    return () => {
+      clearInterval(getReadyInterval);
+    };
+  }, [recordingState, duration, getReadyDuration]);
 
   // Timer logic
   React.useEffect(() => {
@@ -90,13 +103,49 @@ const ExerciseScreen = () => {
         setTimer((prev) => {
           if (prev && prev > 1) return prev - 1;
           clearInterval(timerInterval);
-          // Optionally auto-stop or keep at 0
+          // Timer finished - automatically progress to next stage
           return 0;
         });
       }, 1000);
     }
     return () => clearInterval(timerInterval);
   }, [recordingState, timer]);
+
+  // Auto-progress when timer reaches 0
+  React.useEffect(() => {
+    if (timer === 0 && recordingState === 'recording') {
+      // Timer finished, automatically call handleDone to progress
+      handleDone();
+    }
+  }, [timer, recordingState]);
+
+  // Rest timer logic
+  React.useEffect(() => {
+    let restInterval: any;
+    if (recordingState === 'rest' && restTimer !== null) {
+      restInterval = setInterval(() => {
+        setRestTimer((prev) => {
+          if (prev && prev > 1) return prev - 1;
+          clearInterval(restInterval);
+          // Rest finished, automatically start next set
+          return 0;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(restInterval);
+  }, [recordingState, restTimer]);
+
+  // Auto-progress when rest timer reaches 0
+  React.useEffect(() => {
+    if (restTimer === 0 && recordingState === 'rest') {
+      // Rest finished, automatically start next set directly
+      setCurrentSet(currentSet + 1);
+      setRecordingState('recording');
+      setTimer(duration);
+      setShowDone(true);
+      setRestTimer(null);
+    }
+  }, [restTimer, recordingState, currentSet, duration]);
 
   const goNext = () => {
     const idx = steps.indexOf(step);
@@ -108,17 +157,57 @@ const ExerciseScreen = () => {
     else navigation.goBack();
   };
 
+  const handlePause = () => {
+    if (recordingState === 'recording') {
+      setPausedTimer(timer);
+      setRecordingState('paused');
+    } else if (recordingState === 'paused') {
+      setTimer(pausedTimer);
+      setRecordingState('recording');
+      setPausedTimer(null);
+    }
+  };
+
+  const handleSkip = () => {
+    // Skip only preparation stages (get ready and rest periods), not the actual exercise sets
+    if (recordingState === 'countdown') {
+      // Skip get ready stage (10s timer + 3s countdown) and go directly to recording
+      setRecordingState('recording');
+      setTimer(duration);
+      setShowDone(true);
+      setGetReadyTimer(null);
+    } else if (recordingState === 'rest') {
+      // Skip rest period and go directly to next set recording
+      setCurrentSet(currentSet + 1);
+      setRecordingState('recording');
+      setTimer(duration);
+      setShowDone(true);
+      setRestTimer(null);
+    }
+    // Note: No longer allowing skip during recording/paused states (actual exercise sets)
+  };
+
   const handleDone = async () => {
     const actualDuration = duration - (timer || 0);
     
-    // If this is part of a workout, use the context to complete the set
-    if (workoutId) {
-      completeWorkoutSet(exerciseIndex, actualDuration);
-      navigation.goBack();
+    // If this is part of a workout, call the completion callback
+    if (workoutId && onExerciseComplete) {
+      onExerciseComplete();
       return;
     }
     
-    // Otherwise, handle as standalone exercise
+    // Handle multiple sets for standalone exercises
+    if (totalExerciseSets > 1 && currentSet < totalExerciseSets) {
+      // Start rest period between sets
+      setRecordingState('rest');
+      setRestTimer(exercise.restBetweenSets || 30);
+      setTimer(null);
+      setShowDone(false);
+      setPausedTimer(null);
+      return;
+    }
+    
+    // Otherwise, handle as standalone exercise completion
     const { streaked, newStreak } = await markExerciseComplete(idx, {
       totalDuration: Math.floor(actualDuration / 60), // Convert to minutes
       perfectAccuracy: 1 // Assuming 100% for now
@@ -147,15 +236,23 @@ const ExerciseScreen = () => {
               Set {setNumber} of {totalSets}
             </AppText>
           )}
+          {totalExerciseSets > 1 && !workoutId && (
+            <AppText style={[styles.setInfo, { color: colors.accent }]}>
+              {totalExerciseSets} sets • {duration}s each
+            </AppText>
+          )}
           <AppText style={[styles.desc, { color: colors.text }]}>
             {exercise.instructions || `Do as many ${exercise.title.toLowerCase()} as you can in ${duration} seconds.`}
           </AppText>
           <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={goNext}>
             <AppText style={styles.buttonText}>Next</AppText>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.link} onPress={goBack}>
+            <AppText style={[styles.linkText, { color: colors.primary }]}>Back</AppText>
+          </TouchableOpacity>
         </View>
       )}
-      {step === 'privacy' && (
+      {/* {step === 'privacy' && (
         <View style={styles.centered}>
           <FontAwesome5 name="user-shield" size={48} color={colors.primary} style={{ marginBottom: 24 }} />
           <AppText style={[styles.title, { color: colors.primary }]}>Your privacy is protected</AppText>
@@ -167,51 +264,31 @@ const ExerciseScreen = () => {
             <AppText style={[styles.linkText, { color: colors.primary }]}>Back</AppText>
           </TouchableOpacity>
         </View>
-      )}
+      )} */}
       {step === 'camera' && (
-        <View style={styles.cameraContainer}>
-          {hasPermission === null ? (
-            <AppText style={[styles.desc, { color: colors.text }]}>Requesting camera permission...</AppText>
-          ) : hasPermission === false ? (
-            <AppText style={[styles.desc, { color: colors.text }]}>No access to camera</AppText>
-          ) : (
-            <CameraView style={styles.camera} ref={cameraRef} facing={"front"}>
-              <View style={styles.cameraOverlay}>
-                {/* Recording UI */}
-                {recordingState === 'idle' && (
-                  <TouchableOpacity
-                    style={[styles.button, { backgroundColor: colors.danger }]}
-                    onPress={() => setRecordingState('countdown')}
-                  >
-                    <AppText style={styles.buttonText}>Record</AppText>
-                  </TouchableOpacity>
-                )}
-                {recordingState === 'countdown' && (
-                  <View style={styles.countdownContainer}>
-                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 3 ? 1 : 0.3, color: colors.danger }]}>3</Animated.Text>
-                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 2 ? 1 : 0.3, color: colors.danger }]}>2</Animated.Text>
-                    <Animated.Text style={[styles.countdownDigit, { opacity: countdown === 1 ? 1 : 0.3, color: colors.danger }]}>1</Animated.Text>
-                  </View>
-                )}
-                {recordingState === 'recording' && (
-                  <View style={styles.recordingRow}>
-                    <Animated.View style={[styles.blinkDot, { opacity: blinkAnim, backgroundColor: colors.danger }]} />
-                    <AppText style={[styles.recordingText, { color: colors.danger }]}>Recording</AppText>
-                    <AppText style={[styles.timerText, { color: colors.danger }]}>{timer}s</AppText>
-                  </View>
-                )}
-                {showDone && recordingState === 'recording' && (
-                  <TouchableOpacity style={[styles.button, { backgroundColor: colors.success }]} onPress={handleDone}>
-                    <AppText style={styles.buttonText}>Done</AppText>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity style={styles.link} onPress={goBack}>
-                  <AppText style={[styles.linkText, { color: '#fff' }]}>Back</AppText>
-                </TouchableOpacity>
-              </View>
-            </CameraView>
-          )}
-        </View>
+        <DetailsMode
+          exercise={exercise}
+          duration={duration}
+          onDone={handleDone}
+          onBack={goBack}
+          onPause={handlePause}
+          onSkip={handleSkip}
+          colors={colors}
+          recordingState={recordingState}
+          setRecordingState={setRecordingState}
+          countdown={countdown}
+          timer={timer}
+          showDone={showDone}
+          blinkAnim={blinkAnim}
+          getReadyTimer={getReadyTimer}
+          restTimer={restTimer}
+          workoutId={workoutId}
+          setNumber={setNumber}
+          totalSets={totalSets}
+          currentSet={currentSet}
+          totalExerciseSets={totalExerciseSets}
+          restBetweenSets={exercise.restBetweenSets || 30}
+        />
       )}
     </SafeAreaView>
   );
@@ -265,49 +342,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 16,
     textDecorationLine: 'underline',
-  },
-  cameraContainer: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  camera: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  cameraOverlay: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  countdownContainer: {
-    flexDirection: 'row',
-    marginBottom: 24,
-  },
-  countdownDigit: {
-    fontSize: 48,
-    fontFamily: 'Nunito-Bold',
-  },
-  recordingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  blinkDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
-  },
-  recordingText: {
-    fontSize: 24,
-    fontFamily: 'Nunito-Bold',
-    marginRight: 16,
-  },
-  timerText: {
-    fontSize: 24,
-    fontFamily: 'Nunito-Bold',
   },
 });
 

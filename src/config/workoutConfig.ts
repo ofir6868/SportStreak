@@ -48,41 +48,41 @@ export const WORKOUT_CONFIGS: WorkoutConfig[] = [
         name: 'Push Ups',
         icon: 'arm-flex',
         duration: 45,
-        sets: 1,
+        sets: 3,
         restBetweenSets: 30,
         instructions: 'Do as many push-ups as you can in the time limit',
         difficulty: 'Intermediate'
       },
-      // {
-      //   id: 'squats',
-      //   name: 'Squats',
-      //   icon: 'human',
-      //   duration: 45,
-      //   sets: 3,
-      //   restBetweenSets: 30,
-      //   instructions: 'Perform bodyweight squats with proper form',
-      //   difficulty: 'Beginner'
-      // },
-      // {
-      //   id: 'plank',
-      //   name: 'Plank',
-      //   icon: 'human',
-      //   duration: 30,
-      //   sets: 3,
-      //   restBetweenSets: 45,
-      //   instructions: 'Hold plank position, engaging your core',
-      //   difficulty: 'Beginner'
-      // },
-      // {
-      //   id: 'lunges',
-      //   name: 'Lunges',
-      //   icon: 'walk',
-      //   duration: 40,
-      //   sets: 2,
-      //   restBetweenSets: 30,
-      //   instructions: 'Alternate legs for forward lunges',
-      //   difficulty: 'Intermediate'
-      // }
+      {
+        id: 'squats',
+        name: 'Squats',
+        icon: 'human',
+        duration: 45,
+        sets: 3,
+        restBetweenSets: 30,
+        instructions: 'Perform bodyweight squats with proper form',
+        difficulty: 'Beginner'
+      },
+      {
+        id: 'plank',
+        name: 'Plank',
+        icon: 'human',
+        duration: 30,
+        sets: 3,
+        restBetweenSets: 45,
+        instructions: 'Hold plank position, engaging your core',
+        difficulty: 'Beginner'
+      },
+      {
+        id: 'lunges',
+        name: 'Lunges',
+        icon: 'walk',
+        duration: 40,
+        sets: 2,
+        restBetweenSets: 30,
+        instructions: 'Alternate legs for forward lunges',
+        difficulty: 'Intermediate'
+      }
     ]
   },
   {

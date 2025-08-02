@@ -4,6 +4,7 @@ import AppText from '../components/AppText';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import BottomNavBar from '../components/BottomNavBar';
 import { useProgress } from '../components/ProgressContext';
+import { getTheme } from '../config/theme';
 
 const QuestsScreen = () => {
   const { 
@@ -11,8 +12,10 @@ const QuestsScreen = () => {
     weeklyQuests, 
     completeQuest, 
     resetQuestsIfNeeded,
-    diamonds 
+    diamonds,
+    isDarkMode
   } = useProgress();
+  const theme = getTheme(isDarkMode);
 
   useEffect(() => {
     resetQuestsIfNeeded();
@@ -39,24 +42,25 @@ const QuestsScreen = () => {
     return `${hours}h ${minutes}m`;
   };
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={styles.header}>
           <View style={styles.mascotCircle}>
             <MaterialCommunityIcons name="trophy" size={38} color="#fff" />
           </View>
-          <AppText style={styles.headerTitle}>Quests</AppText>
-          <AppText style={styles.headerSubtitle}>Complete quests to earn rewards! Quests refresh every day.</AppText>
+          <AppText style={[styles.headerTitle, { color: theme.text }]}>Quests</AppText>
+          <AppText style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Complete quests to earn rewards! Quests refresh every day.</AppText>
         </View>
         <View style={styles.sectionTitleRow}>
-          <AppText style={styles.sectionTitle}>Daily Quests</AppText>
-          <AppText style={styles.timer}>{getTimeUntilReset()}</AppText>
+          <AppText style={[styles.sectionTitle, { color: theme.text }]}>Daily Quests</AppText>
+          <AppText style={[styles.timer, { color: theme.textSecondary }]}>{getTimeUntilReset()}</AppText>
         </View>
         {dailyQuests.map(quest => (
           <TouchableOpacity 
             key={quest.id} 
             style={[
               styles.questCard,
+              { backgroundColor: theme.cardBackground },
               quest.completed && styles.completedQuestCard
             ]}
             onPress={() => handleQuestPress(quest)}
@@ -71,12 +75,13 @@ const QuestsScreen = () => {
             <View style={{ flex: 1 }}>
               <AppText style={[
                 styles.questTitle,
+                { color: theme.text },
                 quest.completed && styles.completedQuestTitle
               ]}>
                 {quest.title}
               </AppText>
-              <AppText style={styles.questDescription}>{quest.description}</AppText>
-              <View style={styles.progressBarBg}>
+              <AppText style={[styles.questDescription, { color: theme.textSecondary }]}>{quest.description}</AppText>
+              <View style={[styles.progressBarBg, { backgroundColor: theme.border }]}>
                 <View style={[
                   styles.progressBarFill, 
                   { 
@@ -85,7 +90,7 @@ const QuestsScreen = () => {
                   }
                 ]} />
               </View>
-              <AppText style={styles.progressText}>
+              <AppText style={[styles.progressText, { color: theme.textSecondary }]}>
                 {quest.current} / {quest.target}
               </AppText>
             </View>
@@ -94,16 +99,17 @@ const QuestsScreen = () => {
               quest.completed && styles.completedRewardBadge
             ]}>
               <MaterialCommunityIcons name="diamond" size={16} color="#1CB0F6" />
-              <AppText style={styles.rewardText}>{quest.reward}</AppText>
+              <AppText style={[styles.rewardText, { color: theme.text }]}>{quest.reward}</AppText>
             </View>
           </TouchableOpacity>
         ))}
-        <AppText style={styles.sectionTitle}>Weekly Quests</AppText>
+        <AppText style={[styles.sectionTitle, { color: theme.text }]}>Weekly Quests</AppText>
         {weeklyQuests.map(quest => (
           <TouchableOpacity 
             key={quest.id} 
             style={[
               styles.questCard,
+              { backgroundColor: theme.cardBackground },
               quest.completed && styles.completedQuestCard
             ]}
             onPress={() => handleQuestPress(quest)}
@@ -118,12 +124,13 @@ const QuestsScreen = () => {
             <View style={{ flex: 1 }}>
               <AppText style={[
                 styles.questTitle,
+                { color: theme.text },
                 quest.completed && styles.completedQuestTitle
               ]}>
                 {quest.title}
               </AppText>
-              <AppText style={styles.questDescription}>{quest.description}</AppText>
-              <View style={styles.progressBarBg}>
+              <AppText style={[styles.questDescription, { color: theme.textSecondary }]}>{quest.description}</AppText>
+              <View style={[styles.progressBarBg, { backgroundColor: theme.border }]}>
                 <View style={[
                   styles.progressBarFill, 
                   { 
@@ -132,7 +139,7 @@ const QuestsScreen = () => {
                   }
                 ]} />
               </View>
-              <AppText style={styles.progressText}>
+              <AppText style={[styles.progressText, { color: theme.textSecondary }]}>
                 {quest.current} / {quest.target}
               </AppText>
             </View>
@@ -141,7 +148,7 @@ const QuestsScreen = () => {
               quest.completed && styles.completedRewardBadge
             ]}>
               <MaterialCommunityIcons name="diamond" size={16} color="#1CB0F6" />
-              <AppText style={styles.rewardText}>{quest.reward}</AppText>
+              <AppText style={[styles.rewardText, { color: theme.text }]}>{quest.reward}</AppText>
             </View>
           </TouchableOpacity>
         ))}
@@ -184,7 +191,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headerSubtitle: {
-    color: '#fff',
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 0,
@@ -199,19 +205,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Nunito-Bold',
-    color: '#222',
     marginTop: 10,
     marginBottom: 6,
     marginHorizontal: 18,
   },
   timer: {
-    color: '#FFA800',
     fontFamily: 'Nunito-Bold',
     fontSize: 14,
     marginTop: 10,
   },
   questCard: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,13 +228,11 @@ const styles = StyleSheet.create({
   },
   questTitle: {
     fontSize: 16,
-    color: '#222',
     fontFamily: 'Nunito-SemiBold',
     marginBottom: 4,
   },
   progressBarBg: {
     height: 8,
-    backgroundColor: '#E6F0FA',
     borderRadius: 4,
     marginVertical: 4,
     width: '100%',
@@ -239,16 +240,13 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: 8,
-    backgroundColor: '#FFA800',
     borderRadius: 4,
   },
   progressText: {
     fontSize: 13,
-    color: '#888',
     fontFamily: 'Nunito-Regular',
   },
   rewardBadge: {
-    backgroundColor: '#E6F7FF',
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -257,22 +255,18 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   rewardText: {
-    color: '#1CB0F6',
     fontFamily: 'Nunito-Bold',
     fontSize: 14,
     marginLeft: 4,
   },
   completedQuestCard: {
     opacity: 0.7,
-    backgroundColor: '#F8F9FA',
   },
   completedQuestTitle: {
     textDecorationLine: 'line-through',
-    color: '#888',
   },
   questDescription: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 4,
   },
   completedRewardBadge: {

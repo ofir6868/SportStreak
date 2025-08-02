@@ -41,7 +41,7 @@ const ExerciseCompletionScreen = () => {
         {/* Central Illustration */}
         <View style={styles.imageContainer}>
           <Image 
-            source={isDarkMode ? require('../../assets/mascot.png') : require('../../assets/results.png')} 
+            source={isDarkMode ? require('../../assets/transparent_mascot.png') : require('../../assets/results.png')} 
             style={styles.celebrationImage} 
             contentFit="contain" 
           />

@@ -5,6 +5,7 @@ import AppText from './AppText';
 import { useProgress } from './ProgressContext';
 import { useNavigation } from '@react-navigation/native';
 import { EXERCISE_PRESETS, ExercisePresetKey } from '../config/exercisePresets';
+import SchedulePanel from './SchedulePanel';
 
 const ICON_SIZE = 20;
 const ICON_CONTAINER_SIZE = 32;
@@ -16,6 +17,7 @@ const TopStatusBar = () => {
   const [diamondModal, setDiamondModal] = React.useState(false);
   const [streakModal, setStreakModal] = React.useState(false);
   const [presetModal, setPresetModal] = React.useState(false);
+  const [schedulePanelVisible, setSchedulePanelVisible] = React.useState(false);
 
   // Dark mode colors
   const colors = {
@@ -63,6 +65,15 @@ const TopStatusBar = () => {
           </View>
         </View>
         <View style={styles.statsRow}>
+          {/* Schedule Button */}
+          <TouchableOpacity 
+            onPress={() => setSchedulePanelVisible(true)}
+            activeOpacity={0.8}
+            style={[styles.scheduleButton, schedulePanelVisible && styles.scheduleButtonActive]}
+          >
+            <MaterialCommunityIcons name="calendar-week" size={16} color="#fff" />
+            <AppText style={styles.scheduleButtonText}>Schedule</AppText>
+          </TouchableOpacity>
           {/* Streak */}
           <TouchableOpacity onPress={handleStreakPress} activeOpacity={0.7}>
             <View style={[styles.statItem, { backgroundColor: '#FFA800', position: 'relative' }]}> {/* Orange */}
@@ -80,7 +91,6 @@ const TopStatusBar = () => {
               <AppText style={styles.statValue}>{diamonds}</AppText>
             </View>
           </TouchableOpacity>
-          
         </View>
       </View>
 
@@ -170,6 +180,12 @@ const TopStatusBar = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Schedule Panel */}
+      <SchedulePanel 
+        isVisible={schedulePanelVisible}
+        onClose={() => setSchedulePanelVisible(false)}
+      />
       
     </View>
   );
@@ -216,13 +232,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontFamily: 'Nunito-Bold',
-    maxWidth: 120,
+    maxWidth: 100,
     overflow: 'hidden',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   statItem: {
     flexDirection: 'row',
@@ -367,6 +383,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+  },
+  scheduleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    height: ICON_CONTAINER_SIZE,
+  },
+  scheduleButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: 'Nunito-Regular',
+    marginLeft: 4,
+  },
+  scheduleButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  scheduleHandle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
+    alignSelf: 'center',
+  },
+  scheduleHandleText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'Nunito-Regular',
+    marginHorizontal: 8,
+  },
+  scheduleHandleActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
 });
 

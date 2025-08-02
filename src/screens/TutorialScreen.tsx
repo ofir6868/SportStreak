@@ -30,11 +30,11 @@ const TutorialScreen = ({ navigation }) => {
         </View>
       </View>
       {/* Coming soon section */}
-      <AppText style={styles.comingSoonTitle}>Coming soon</AppText>
+      {/* <AppText style={styles.comingSoonTitle}>Coming soon</AppText>
       <View style={styles.comingSoonBox}>
         <View style={styles.featureRow}>
           <MaterialCommunityIcons name="chart-line" size={24} color="#1CB0F6" style={styles.icon} />
-          <AppText style={styles.featureText}>Advanced analytics
+          <AppText style={styles.featureText}>Advanced exercise review
             <View style={styles.badge}><AppText style={styles.badgeText}>Coming soon</AppText></View>
           </AppText>
         </View>
@@ -42,9 +42,9 @@ const TutorialScreen = ({ navigation }) => {
           <MaterialCommunityIcons name="robot-outline" size={24} color="#FF9200" style={styles.icon} />
           <AppText style={styles.featureText}>Personalized GPT chat
             <View style={[styles.badge, styles.badgeBlue]}><AppText style={styles.badgeText}>Coming soon</AppText></View>
-          </AppText>
-        </View>
-      </View>
+          </AppText> */}
+        {/* </View> */}
+      {/* </View> */}
       <View style={{ height: 32 }} />
       <TouchableOpacity style={styles.button} onPress={() => navigation.replace('Home')}>
         <AppText style={styles.buttonText}>Got it – Let's go!</AppText>
