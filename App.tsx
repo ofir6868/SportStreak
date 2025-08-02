@@ -11,6 +11,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
 import React from 'react';
 import { Platform, SafeAreaView, View, StyleSheet, LogBox } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Suppress the specific warning about text strings and gesture handler events
 LogBox.ignoreLogs([
@@ -37,11 +38,9 @@ import WorkoutCompletionScreen from './src/screens/WorkoutCompletionScreen';
 import ShopScreen from './src/screens/ShopScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import QuestToast from './src/components/QuestToast';
-import { GestureHandlerWrapper } from './src/components/GestureHandlerWrapper';
 
 // Ensure gesture handler is properly initialized
 import 'react-native-gesture-handler';
-import './src/polyfills/gestureHandlerPolyfill';
 
 // Suppress gesture handler warnings in development
 if (__DEV__) {
@@ -110,47 +109,45 @@ const AppContent = () => {
   if (!initialRoute) return null;
   
   return (
-    <GestureHandlerWrapper>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <SafeAreaView style={styles.safeArea}>
-          <NavigationContainer>
-            <Stack.Navigator 
-              id={undefined} 
-              screenOptions={{ 
-                headerShown: false,
-                contentStyle: { backgroundColor: theme.background }
-              }} 
-              initialRouteName={initialRoute}
-            >
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="PlanSelection" component={PlanSelectionScreen} />
-              <Stack.Screen name="UserInfo" component={UserInfoScreen} />
-              <Stack.Screen name="Tutorial" component={TutorialScreen} />
-              <Stack.Screen name="Nickname" component={NicknameScreen} />
-              {/* <Stack.Screen name="Signup" component={SignupScreen} /> */}
-              <Stack.Screen name="PresetSelection" component={PresetSelectionScreen} />
-              <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen name="Quests" component={QuestsScreen} />
-              <Stack.Screen name="Workouts" component={WorkoutsScreen} />
-              <Stack.Screen name="WorkoutSession" component={WorkoutSessionScreen} />
-              <Stack.Screen name="WorkoutCompletion" component={WorkoutCompletionScreen} />
-              <Stack.Screen name="Shop" component={ShopScreen} />
-              <Stack.Screen name="Profile" component={ProfileScreen} />
-              <Stack.Screen name="Exercise" component={ExerciseScreen} />
-              <Stack.Screen name="ExerciseCompletion" component={ExerciseCompletionScreen} />
-              <Stack.Screen name="StreakCelebration" component={StreakCelebrationScreen} />
-              <Stack.Screen name="RestDay" component={RestDayScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
-          <QuestToast
-            visible={completedQuestToast.visible}
-            questTitle={completedQuestToast.title}
-            reward={completedQuestToast.reward}
-            onHide={hideQuestToast}
-          />
-        </SafeAreaView>
-      </View>
-    </GestureHandlerWrapper>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <SafeAreaView style={styles.safeArea}>
+        <NavigationContainer>
+          <Stack.Navigator 
+            id={undefined} 
+            screenOptions={{ 
+              headerShown: false,
+              contentStyle: { backgroundColor: theme.background }
+            }} 
+            initialRouteName={initialRoute}
+          >
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="PlanSelection" component={PlanSelectionScreen} />
+            <Stack.Screen name="UserInfo" component={UserInfoScreen} />
+            <Stack.Screen name="Tutorial" component={TutorialScreen} />
+            <Stack.Screen name="Nickname" component={NicknameScreen} />
+            {/* <Stack.Screen name="Signup" component={SignupScreen} /> */}
+            <Stack.Screen name="PresetSelection" component={PresetSelectionScreen} />
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Quests" component={QuestsScreen} />
+            <Stack.Screen name="Workouts" component={WorkoutsScreen} />
+            <Stack.Screen name="WorkoutSession" component={WorkoutSessionScreen} />
+            <Stack.Screen name="WorkoutCompletion" component={WorkoutCompletionScreen} />
+            <Stack.Screen name="Shop" component={ShopScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Exercise" component={ExerciseScreen} />
+            <Stack.Screen name="ExerciseCompletion" component={ExerciseCompletionScreen} />
+            <Stack.Screen name="StreakCelebration" component={StreakCelebrationScreen} />
+            <Stack.Screen name="RestDay" component={RestDayScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+        <QuestToast
+          visible={completedQuestToast.visible}
+          questTitle={completedQuestToast.title}
+          reward={completedQuestToast.reward}
+          onHide={hideQuestToast}
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -172,9 +169,11 @@ const App = () => {
   if (!fontsLoaded) return null;
   
   return (
-    <ProgressProvider>
-      <AppContent />
-    </ProgressProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ProgressProvider>
+        <AppContent />
+      </ProgressProvider>
+    </GestureHandlerRootView>
   );
 };
 const styles = StyleSheet.create({

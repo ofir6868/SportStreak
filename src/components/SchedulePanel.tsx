@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, PanResponder } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AppText from './AppText';
 import { Slider } from '@miblanchard/react-native-slider';
 import { useProgress } from './ProgressContext';
-import { PanGestureHandler, State } from './GestureHandlerWrapper';
 
 interface SchedulePanelProps {
   isVisible: boolean;
@@ -21,7 +20,7 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
     selectedWorkoutDays, 
     setSelectedWorkoutDays 
   } = useProgress();
-  const [slideAnim] = useState(new Animated.Value(-300));
+  const [slideAnim] = useState(new Animated.Value(-350));
 
   // Dark mode colors
   const colors = {
@@ -35,6 +34,69 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
     modalOverlay: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
   };
 
+  const [isAnimating, setIsAnimating] = useState(false);
+  const isAnimatingRef = useRef(false);
+  const currentSlidePosition = useRef(350);
+  const panStartY = useRef(0);
+
+  // Create PanResponder for gesture handling
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderGrant: (_, gestureState) => {
+        if (isAnimatingRef.current) return;
+        panStartY.current = gestureState.y0;
+        setIsAnimating(false);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (isAnimatingRef.current) return;
+        const newPosition = currentSlidePosition.current + gestureState.dy;
+        slideAnim.setValue(Math.max(-350, Math.min(350, newPosition)));
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (isAnimatingRef.current) return;
+        
+        const velocity = gestureState.vy;
+        const distance = gestureState.dy;
+        
+        // Determine if we should close based on velocity or distance
+        const shouldClose = velocity < -0.5 || distance < -50;
+        
+        if (shouldClose) {
+          // Close panel
+          isAnimatingRef.current = true;
+          setIsAnimating(true);
+          Animated.timing(slideAnim, {
+            toValue: -350,
+            duration: 350,
+            useNativeDriver: true,
+          }).start(() => {
+            isAnimatingRef.current = false;
+            setIsAnimating(false);
+            currentSlidePosition.current = -350;
+            onClose();
+          });
+        } else {
+          // Return to open position
+          isAnimatingRef.current = true;
+          setIsAnimating(true);
+          Animated.spring(slideAnim, {
+            toValue: 350,
+            useNativeDriver: true,
+            tension: 8
+          }).start(() => {
+            isAnimatingRef.current = false;
+            setIsAnimating(false);
+            currentSlidePosition.current = 350;
+          });
+        }
+      },
+    })
+  ).current;
+
   useEffect(() => {
     // Reset animation state when visibility changes
     isAnimatingRef.current = false;
@@ -44,25 +106,25 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
       isAnimatingRef.current = true;
       setIsAnimating(true);
       Animated.spring(slideAnim, {
-        toValue: 300,
+        toValue: 350,
         useNativeDriver: true,
         bounciness: 0
       }).start(() => {
         isAnimatingRef.current = false;
         setIsAnimating(false);
-        currentSlidePosition.current = 300;
+        currentSlidePosition.current = 350;
       });
     } else {
       isAnimatingRef.current = true;
       setIsAnimating(true);
       Animated.timing(slideAnim, {
-        toValue: -300,
-        duration: 300,
+        toValue: -350,
+        duration: 350,
         useNativeDriver: true,
       }).start(() => {
         isAnimatingRef.current = false;
         setIsAnimating(false);
-        currentSlidePosition.current = -300;
+        currentSlidePosition.current = -350;
       });
     }
   }, [isVisible]);
@@ -107,200 +169,83 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
 
   const isDaySelected = (dayIndex: number) => selectedWorkoutDays.includes(dayIndex);
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [gestureOffset] = useState(new Animated.Value(0));
-  const isAnimatingRef = useRef(false);
-  const currentSlidePosition = useRef(300);
-
-  const onGestureEvent = Animated.event(
-    [{ nativeEvent: { translationY: gestureOffset } }],
-    { useNativeDriver: true }
-  );
-
-  const onHandlerStateChange = (event: any) => {
-    if (event.nativeEvent.state === State.BEGAN) {
-      if (isAnimatingRef.current) return;
-      setIsDragging(true);
-      // Reset the gesture offset when starting
-      gestureOffset.setValue(0);
-    } else if (event.nativeEvent.state === State.END) {
-      if (isAnimatingRef.current) return;
-      setIsDragging(false);
-      const { translationY } = event.nativeEvent;
-      
-      if (translationY < -50) {
-        // Swipe up - close panel
-        isAnimatingRef.current = true;
-        setIsAnimating(true);
-        // Calculate the current position including the gesture offset
-        const currentPosition = currentSlidePosition.current + translationY;
-        // Set the slideAnim to the current dragged position first
-        slideAnim.setValue(currentPosition);
-        Animated.timing(slideAnim, {
-          toValue: -300,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          isAnimatingRef.current = false;
-          setIsAnimating(false);
-          currentSlidePosition.current = -300;
-          onClose();
-        });
-      } else {
-        // Return to open position
-        isAnimatingRef.current = true;
-        setIsAnimating(true);
-        Animated.spring(slideAnim, {
-          toValue: 300,
-          useNativeDriver: true,
-          tension: 8
-        }).start(() => {
-          isAnimatingRef.current = false;
-          setIsAnimating(false);
-          currentSlidePosition.current = 300;
-        });
-      }
-      // Reset the gesture offset
-      gestureOffset.setValue(0);
-    }
-  };
-
-  const onBottomHandleGestureEvent = Animated.event(
-    [{ nativeEvent: { translationY: gestureOffset } }],
-    { useNativeDriver: true }
-  );
-
-  const onBottomHandleStateChange = (event: any) => {
-    if (event.nativeEvent.state === State.BEGAN) {
-      if (isAnimatingRef.current) return;
-      setIsDragging(true);
-      // Reset the gesture offset when starting
-      gestureOffset.setValue(0);
-    } else if (event.nativeEvent.state === State.END) {
-      if (isAnimatingRef.current) return;
-      setIsDragging(false);
-      const { translationY } = event.nativeEvent;
-      
-      if (translationY < -50) {
-        // Dragged up more than 50px - close panel
-        isAnimatingRef.current = true;
-        setIsAnimating(true);
-        // Calculate the current position including the gesture offset
-        const currentPosition = currentSlidePosition.current + translationY;
-        // Set the slideAnim to the current dragged position first
-        slideAnim.setValue(currentPosition);
-        Animated.timing(slideAnim, {
-          toValue: -300,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          isAnimatingRef.current = false;
-          setIsAnimating(false);
-          currentSlidePosition.current = -300;
-          onClose();
-        });
-      } else {
-        // Return to fully open position (300)
-        isAnimatingRef.current = true;
-        setIsAnimating(true);
-        Animated.spring(slideAnim, {
-          toValue: 300,
-          useNativeDriver: true,
-          tension: 8
-        }).start(() => {
-          isAnimatingRef.current = false;
-          setIsAnimating(false);
-          currentSlidePosition.current = 300;
-        });
-      }
-      // Reset the gesture offset
-      gestureOffset.setValue(0);
-    }
-  };
-
-    return (
-    <PanGestureHandler
-      onGestureEvent={onGestureEvent}
-      onHandlerStateChange={onHandlerStateChange}
-      enabled={isVisible && !isAnimatingRef.current}
+  return (
+    <Animated.View 
+      style={[
+        styles.container,
+        { 
+          backgroundColor: colors.background,
+          transform: [{ translateY: slideAnim }]
+        }
+      ]}
+      {...panResponder.panHandlers}
     >
-              <Animated.View 
-          style={[
-            styles.container,
-            { 
-              backgroundColor: colors.background,
-              transform: [{ translateY: Animated.add(slideAnim, gestureOffset) }]
-            }
-          ]}
+      {/* Handle bar */}
+      <View style={styles.handleContainer}>
+        <View style={[styles.handle, { backgroundColor: colors.border }]} />
+        <TouchableOpacity 
+          onPress={() => {
+            // Prevent multiple simultaneous animations
+            if (isAnimatingRef.current) return;
+            
+            isAnimatingRef.current = true;
+            setIsAnimating(true);
+            Animated.timing(slideAnim, {
+              toValue: -350,
+              duration: 350,
+              useNativeDriver: true,
+            }).start(() => {
+              isAnimatingRef.current = false;
+              setIsAnimating(false);
+              onClose();
+            });
+          }} 
+          style={styles.closeButton}
         >
-        {/* Handle bar */}
-        <View style={styles.handleContainer}>
-          <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          <TouchableOpacity 
-            onPress={() => {
-              // Prevent multiple simultaneous animations
-              if (isAnimatingRef.current) return;
-              
-              isAnimatingRef.current = true;
-              setIsAnimating(true);
-              Animated.timing(slideAnim, {
-                toValue: -300,
-                duration: 300,
-                useNativeDriver: true,
-              }).start(() => {
-                isAnimatingRef.current = false;
-                setIsAnimating(false);
-                onClose();
-              });
-            }} 
-            style={styles.closeButton}
-          >
-            <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+          <MaterialCommunityIcons name="close" size={24} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Title */}
-        <View style={styles.titleContainer}>
-          <MaterialCommunityIcons name="calendar-week" size={24} color={colors.primary} />
-          <AppText style={[styles.title, { color: colors.text }]}>Your Schedule</AppText>
-        </View>
+      {/* Title */}
+      <View style={styles.titleContainer}>
+        <MaterialCommunityIcons name="calendar-week" size={24} color={colors.primary} />
+        <AppText style={[styles.title, { color: colors.text }]}>Your Schedule</AppText>
+      </View>
 
-        {/* Workout Days Slider */}
-        <View style={[styles.sliderContainer, { backgroundColor: colors.cardBackground }]}>
-          <View style={styles.sliderHeader}>
-            <MaterialCommunityIcons name="calendar-clock" size={20} color={colors.primary} />
-            <AppText style={[styles.sliderLabel, { color: colors.text }]}>How many days per week?</AppText>
-          </View>
-          <View style={styles.sliderRow}>
-            <Slider
-              value={workoutDaysPerWeek}
-              onValueChange={value => handleWorkoutDaysChange(Array.isArray(value) ? value[0] : value)}
-              minimumValue={1}
-              maximumValue={7}
-              step={1}
-              containerStyle={{ flex: 1 }}
-              thumbTintColor={colors.primary}
-              minimumTrackTintColor={colors.primary}
-              maximumTrackTintColor={colors.border}
-            />
-            <AppText style={[styles.sliderValue, { color: colors.primary }]}>{workoutDaysPerWeek} days</AppText>
+      {/* Workout Days Slider */}
+      <View style={[styles.sliderContainer, { backgroundColor: colors.cardBackground }]}>
+        <View style={styles.sliderHeader}>
+          <MaterialCommunityIcons name="calendar-clock" size={20} color={colors.primary} />
+          <AppText style={[styles.sliderLabel, { color: colors.text }]}>How many days per week?</AppText>
+        </View>
+        <View style={styles.sliderRow}>
+          <Slider
+            value={workoutDaysPerWeek}
+            onValueChange={value => handleWorkoutDaysChange(Array.isArray(value) ? value[0] : value)}
+            minimumValue={1}
+            maximumValue={7}
+            step={1}
+            containerStyle={{ flex: 1 }}
+            thumbTintColor={colors.primary}
+            minimumTrackTintColor={colors.primary}
+            maximumTrackTintColor={colors.border}
+          />
+          <AppText style={[styles.sliderValue, { color: colors.primary }]}>{workoutDaysPerWeek} days</AppText>
+        </View>
+      </View>
+
+      {/* Calendar */}
+      <View style={[styles.calendarContainer, { backgroundColor: colors.cardBackground }]}>
+        <View style={styles.calendarHeader}>
+          <MaterialCommunityIcons name="calendar-check" size={20} color={colors.primary} />
+          <AppText style={[styles.calendarTitle, { color: colors.text }]}>Select your workout days</AppText>
+          <View style={[styles.selectionCount, { backgroundColor: colors.primary }]}>
+            <AppText style={styles.selectionCountText}>
+              {selectedWorkoutDays.length}/{workoutDaysPerWeek}
+            </AppText>
           </View>
         </View>
-
-
-        {/* Calendar */}
-        <View style={[styles.calendarContainer, { backgroundColor: colors.cardBackground }]}>
-          <View style={styles.calendarHeader}>
-            <MaterialCommunityIcons name="calendar-check" size={20} color={colors.primary} />
-            <AppText style={[styles.calendarTitle, { color: colors.text }]}>Select your workout days</AppText>
-            <View style={[styles.selectionCount, { backgroundColor: colors.primary }]}>
-              <AppText style={styles.selectionCountText}>
-                {selectedWorkoutDays.length}/{workoutDaysPerWeek}
-              </AppText>
-            </View>
-          </View>
-        
+      
         {/* Day headers */}
         <View style={styles.dayHeaders}>
           {DAYS_OF_WEEK.map((day, index) => (
@@ -313,22 +258,22 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
         {/* Day buttons */}
         <View style={styles.daysContainer}>
           {DAYS_OF_WEEK.map((day, index) => {
-                         const isSelected = isDaySelected(index);
-             const isDisabled = !isSelected && selectedWorkoutDays.length >= workoutDaysPerWeek;
+            const isSelected = isDaySelected(index);
+            const isDisabled = !isSelected && selectedWorkoutDays.length >= workoutDaysPerWeek;
             
-                         return (
-               <TouchableOpacity
-                 key={day}
-                 style={[
-                   styles.dayButton,
-                   { backgroundColor: colors.cardBackground },
-                   isSelected && [styles.dayButtonSelected, { backgroundColor: colors.primary }],
-                   isDisabled && [styles.dayButtonDisabled, { backgroundColor: colors.border }]
-                 ]}
-                 onPress={() => handleDayPress(index)}
-                 disabled={isDisabled}
-                 activeOpacity={0.7}
-               >
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayButton,
+                  { backgroundColor: colors.cardBackground },
+                  isSelected && [styles.dayButtonSelected, { backgroundColor: colors.primary }],
+                  isDisabled && [styles.dayButtonDisabled, { backgroundColor: colors.border }]
+                ]}
+                onPress={() => handleDayPress(index)}
+                disabled={isDisabled}
+                activeOpacity={0.7}
+              >
                 <AppText style={[
                   styles.dayButtonText,
                   { color: colors.text },
@@ -369,31 +314,25 @@ const SchedulePanel: React.FC<SchedulePanelProps> = ({ isVisible, onClose }) => 
       </View>
 
       {/* Bottom Handle */}
-      <PanGestureHandler
-        onGestureEvent={onBottomHandleGestureEvent}
-        onHandlerStateChange={onBottomHandleStateChange}
-        enabled={isVisible && !isAnimatingRef.current}
+      <View 
+        style={[
+          styles.bottomHandleContainer,
+          { 
+            backgroundColor: colors.cardBackground
+          }
+        ]}
+        {...panResponder.panHandlers}
       >
-        <Animated.View 
-          style={[
-            styles.bottomHandleContainer,
-            { 
-              backgroundColor: colors.cardBackground
-            }
-          ]}
-        >
-          <View style={[styles.bottomHandle, { backgroundColor: colors.border }]} />
-        </Animated.View>
-      </PanGestureHandler>
+        <View style={[styles.bottomHandle, { backgroundColor: colors.border }]} />
+      </View>
     </Animated.View>
-    </PanGestureHandler>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: -300, // Start off-screen
+    top: -350, // Start off-screen
     left: 0,
     right: 0,
     zIndex: 9999,

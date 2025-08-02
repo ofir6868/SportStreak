@@ -11,4 +11,7 @@ config.resolver.alias = {
 // Ensure gesture handler is properly resolved
 config.resolver.platforms = ['native', 'android', 'ios', 'web'];
 
+// Add gesture handler to the resolver extensions
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'jsx', 'js', 'ts', 'tsx'];
+
 module.exports = config; 

@@ -112,7 +112,6 @@ const PathsSlider = () => {
   };
 
   const colors = {
-    background: isDarkMode ? '#2a2a2a' : '#fff',
     text: isDarkMode ? '#ffffff' : '#222',
     textSecondary: isDarkMode ? '#cccccc' : '#888',
     primary: '#1CB0F6',

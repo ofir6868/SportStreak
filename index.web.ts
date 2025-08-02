@@ -10,9 +10,6 @@ if (Platform.OS !== 'web') {
   }
 }
 
-// Import polyfill for gesture handler
-import './src/polyfills/gestureHandlerPolyfill';
-
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
